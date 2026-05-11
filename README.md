@@ -1,4 +1,4 @@
-## digipath (under construction)
+# digipath 🔬
  
 ### Problem definition
 
