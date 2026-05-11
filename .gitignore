@@ -1,0 +1,11 @@
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.ruff_cache
+.venv
+
+# NOTE: Remember to the specified your dataset into this folder to train 
+data/
