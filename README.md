@@ -15,7 +15,6 @@ establishing cost advantage over traditional MRI consultations and providing lab
 
 So moving on to this project...! :(
 
-
 ### Dataset Description
 
 - LungHist700 [(Diosdado et al., 2024)](https://doi.org/10.1038/s41597-024-03944-3)
