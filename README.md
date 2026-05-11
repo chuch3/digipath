@@ -8,8 +8,8 @@ Whole-slide images provides morphological biomarkers (tissue ROIs) and cellular 
 capturing finer details of each tissue sample over subjective visual indicators from MRIs.
 Giving more precise insights to cancer / tumor diagnosis and grading in AI/ML applications.
 
-Digital pathology is proven to improve workflows by 13% and clear return on investments (ROIs) 
-, establishing cost advantage over traditional MRI consultations and providing lab revenue.
+Digital pathology is proven to improve workflows by 13% and clear return on investments (ROIs), 
+establishing cost advantage over traditional MRI consultations and providing lab revenue.
 
 [(Wilson et al., 2017)](https://clpmag.com/diagnostic-technologies/digital-pathology/digital-pathology-gives-rise-computational-pathology/)
 
