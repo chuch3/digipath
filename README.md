@@ -22,15 +22,14 @@ Goal : Create a strong-level / patch-level WSI (Whole-Slide Image) lung tumor Cl
 ```mermaid
 graph TD
     A ["LungHist700 Dataset"] --> B ["Dataset loading"]
-    B --> B1 [""]
-    B --> B2 ["Review again on online guides"]
-    B --> B3 ["Resizing / data augmentation for better performance"]
-    B --> B4 ["Dataset split 80% train, 10% test, 10% valid"]
-    B --> B5 ["Use metadata csv to map data"]
+    B --> B1 ["Review again on online guides"]
+    B --> B2 ["Resizing / data augmentation for better performance"]
+    B --> B3 ["Dataset split 80% train, 10% test, 10% valid"]
+    B --> B4 ["Use metadata csv to map data"]
 
     A --> C["EDA Analysis"]
-    A --> C["Attention-based models like simple ViTs due to small dataset training"]
-B1 ```
+    A --> D["Attention-based models like simple ViTs due to small dataset training"]
+```
 
 
 - [ ] Create pytorch ImageFolder dataset over LungHist700 dataset. Refer the target class based on the paper. (Data Loading)
