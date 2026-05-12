@@ -1,0 +1,40 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "---\n",
+        "title: digipath\n",
+        "format: html \n",
+        "---\n",
+        "\n",
+        "This is a test and always will be. "
+      ],
+      "id": "0ea4c00d"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "from pydicom import dcmread\n",
+        "from src.config import _SAMPLE_TCGA_DCM_FILE \n",
+        "\n",
+        "ds = dcmread(_SAMPLE_TCGA_DCM_FILE)"
+      ],
+      "id": "18221579",
+      "execution_count": null,
+      "outputs": []
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "name": "python3",
+      "language": "python",
+      "display_name": "Python 3 (ipykernel)",
+      "path": "/home/chu/.local/share/jupyter/kernels/python3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}

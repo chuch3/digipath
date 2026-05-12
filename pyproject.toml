@@ -1,7 +1,15 @@
 [project]
-name = "wsi-grading"
+name = "digipath"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11.12"
-dependencies = []
+dependencies = [
+    "matplotlib>=3.10.9",
+    "opencv-python>=4.13.0.92",
+    "openslide-bin>=4.0.0.13",
+    "openslide-python>=1.4.3",
+    "pathlib>=1.0.1",
+    "pydicom>=3.0.2",
+    "pyqt5>=5.15.11",
+]

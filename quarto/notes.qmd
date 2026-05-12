@@ -1,0 +1,22 @@
+---
+title: digipath
+format: html 
+---
+
+This is a test and always will be. 
+
+```{python} 
+from pydicom import dcmread 
+from src.config import _SAMPLE_TCGA_DCM_FILE 
+
+ds = dcmread(_SAMPLE_TCGA_DCM_FILE)
+```
+
+
+
+
+
+
+
+
+ 

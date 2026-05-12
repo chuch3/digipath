@@ -1,4 +1,16 @@
 # digipath 
+
+## Todo
+
+Start : 2026-05-11 
+
+- Find WSI dataset, preprocess into patches and create feature vectors with pre-trained CNNs. Performing weak-level (slide-level) classification
+    - Based on CLAM architecture with flask evaluation visualization
+
+~~Use a pre-patched WSI dataset to perform strong-level (patch-level) classication.~~
+
+- [ ] Tissue segmentation 
+- [ ] Select and apply model for WSI-specific applications
  
 ### Problem definition
 
@@ -17,22 +29,30 @@ So moving on to this project...! :(
 
 ### Dataset Description
 
+- [TCIA Rectum Cancer / TCGA-READ](https://www.cancerimagingarchive.net/collection/tcga-read/)
+
 - LungHist700 [(Diosdado et al., 2024)](https://doi.org/10.1038/s41597-024-03944-3)
     - "Accurate detection and classification of lung malignancies are crucial for 
     early diagnosis, treatment planning, and patient prognosis." 
     - "... a dataset of 691 high-resolution (1200 × 1600 pixels) histopathological lung images, covering adenocarcinomas, squamous cell carcinomas, and normal tissues from 45 patients. These images are subdivided into three differentiation levels for both pathological types: well, moderately, and poorly differentiated, resulting in seven classes for classification. The dataset includes images at 20x and 40x magnification, reflecting real clinical diversity. "
 
+
+### Pipeline 
+
+Due to the large pixel resolution, we divide the WSI into smaller pixel samples [(224x224 pixels is recommended)](https://www.reddit.com/r/computervision/comments/o6f1y9/whole_slide_image_wsi_classification_with_vision/). We used an expert-labeled segmented dataset, which skips slide-level preprocessing as each patches are needed to be thoroughly examined by real pathologists. 
+
+Using Multiple Instance Learning (MIL), each bag (WSI) has N instances (patches) with each bag allowing negative (all tissue patch are healthy) and positve (at least one tissue path is unhealthy). 
+
 ### Dataset Setup 
 
 Download the dataset [online](https://figshare.com/articles/dataset/LungHist700_A_Dataset_of_Histological_Images_for_Deep_Learning_in_Pulmonary_Pathology/25459174), extract it and place onto the `data/` folder for analysis.
 
-## Todo
 
-Start : 2026-05-11 
+## References
 
-- [ ] WSI image analysis 
-- [ ] Select and apply model for WSI-specific applications
+- Gul, A. G., Cetin, O., Reich, C., Flinner, N., Prangemeier, T., & Koeppl, H. (2022). Histopathological image classification based on self-supervised vision transformer and weak labels. Medical Imaging 2022: Digital and Computational Pathology, 57. https://doi.org/10.1117/12.2624609 [(link)](https://arxiv.org/abs/2210.09021)
 
-## Ideas
+- nghihuynh. (2022, August 10). MayoClinic: WSI preprocessing + Tiling. Kaggle.com; Kaggle. [(link)](https://www.kaggle.com/code/nghihuynh/mayoclinic-wsi-preprocessing-tiling)
 
-- Multiple Instance Learning 
+
+

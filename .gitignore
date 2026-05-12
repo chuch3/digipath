@@ -1,6 +1,7 @@
 __pycache__/
 *.py[oc]
 build/
+quarto/
 dist/
 wheels/
 *.egg-info
