@@ -1,17 +1,5 @@
 # digipath 
 
-## Todo
-
-Start : 2026-05-11 
-
-- Find WSI dataset, preprocess into patches and create feature vectors with pre-trained CNNs. Performing weak-level (slide-level) classification
-    - Based on CLAM architecture with flask evaluation visualization
-
-~~Use a pre-patched WSI dataset to perform strong-level (patch-level) classication.~~
-
-- [ ] Tissue segmentation 
-- [ ] Select and apply model for WSI-specific applications
- 
 ### Problem definition
 
 Why apply digital pathology analysis instead of MRI for tumors? 
@@ -24,8 +12,22 @@ Digital pathology is proven to improve workflows by 13% and clear return on inve
 establishing cost advantage over traditional MRI consultations and providing lab revenue.
 
 [(Wilson et al., 2017)](https://clpmag.com/diagnostic-technologies/digital-pathology/digital-pathology-gives-rise-computational-pathology/)
+## Todo
 
-So moving on to this project...! :(
+Goal : Create a strong-level / patch-level WSI (Whole-Slide Image) lung tumor Classification with good results
+
+> i know this is keywordy but bare with me mister
+
+- [ ] Create pytorch ImageFolder dataset over LungHist700 dataset. Refer the target class based on the paper. (Data Loading)
+- [ ] Use a light and good pretrained CNNs to train on the dataset 
+
+#### Future ideas
+
+> MIL can only be used on weak-level / slide-level / world-level supervised learning
+
+- Find WSI dataset, preprocess into patches and create feature vectors with pre-trained CNNs. Performing weak-level (slide-level) classification
+    - Based on CLAM architecture with flask evaluation visualization
+- Tissue segmentation 
 
 ### Dataset Description
 
@@ -36,12 +38,13 @@ So moving on to this project...! :(
     early diagnosis, treatment planning, and patient prognosis." 
     - "... a dataset of 691 high-resolution (1200 × 1600 pixels) histopathological lung images, covering adenocarcinomas, squamous cell carcinomas, and normal tissues from 45 patients. These images are subdivided into three differentiation levels for both pathological types: well, moderately, and poorly differentiated, resulting in seven classes for classification. The dataset includes images at 20x and 40x magnification, reflecting real clinical diversity. "
 
-
 ### Pipeline 
 
 Due to the large pixel resolution, we divide the WSI into smaller pixel samples [(224x224 pixels is recommended)](https://www.reddit.com/r/computervision/comments/o6f1y9/whole_slide_image_wsi_classification_with_vision/). We used an expert-labeled segmented dataset, which skips slide-level preprocessing as each patches are needed to be thoroughly examined by real pathologists. 
 
-Using Multiple Instance Learning (MIL), each bag (WSI) has N instances (patches) with each bag allowing negative (all tissue patch are healthy) and positve (at least one tissue path is unhealthy). 
+
+.. (under construction)
+
 
 ### Dataset Setup 
 
