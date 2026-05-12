@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>README</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+<h1 id="digipath">digipath</h1>
+<h3 id="problem-definition">Problem definition</h3>
+<p>Why apply digital pathology analysis instead of MRI for tumors?</p>
+<p>Whole-slide images provides morphological biomarkers (tissue ROIs)
+and cellular resolution, capturing finer details of each tissue sample
+over subjective visual indicators from MRIs. Giving more precise
+insights to cancer / tumor diagnosis and grading in AI/ML
+applications.</p>
+<p>Digital pathology is proven to improve workflows by 13% and clear
+return on investments (ROIs), establishing cost advantage over
+traditional MRI consultations and providing lab revenue.</p>
+<p><a
+href="https://clpmag.com/diagnostic-technologies/digital-pathology/digital-pathology-gives-rise-computational-pathology/">(Wilson
+et al., 2017)</a></p>
+<h2 id="todo">Todo</h2>
+<p>Goal : Create a strong-level / patch-level WSI (Whole-Slide Image)
+lung tumor Classification with good results</p>
+<blockquote>
+<p>i know this is keywordy but bare with me mister</p>
+</blockquote>
+<p>```mermaid graph TD A [“LungHist700 Dataset”] –&gt; B [“Dataset
+loading”] B –&gt; B1 [“”] B –&gt; B2 [“Review again on online guides”] B
+–&gt; B3 [“Resizing / data augmentation for better performance”] B –&gt;
+B4 [“Dataset split 80% train, 10% test, 10% valid”] B –&gt; B5 [“Use
+metadata csv to map data”]</p>
+<pre><code>A --&gt; C[&quot;EDA Analysis&quot;]
+A --&gt; C[&quot;Attention-based models like simple ViTs due to small dataset training&quot;]</code></pre>
+<p>B1 ```</p>
+<ul class="task-list">
+<li><p><label><input type="checkbox" />Create pytorch ImageFolder
+dataset over LungHist700 dataset. Refer the target class based on the
+paper. (Data Loading)</label></p>
+<ul>
+<li>review again on online guides</li>
+<li>resizing / data augmentation for better performance</li>
+<li>dataset split 80% train, 10% test, 10% valid</li>
+<li>use metadata csv to map data</li>
+</ul></li>
+<li><p><label><input type="checkbox" />EDA analysis (?)</label></p></li>
+<li><p><label><input type="checkbox" />Attention-based models like
+simple ViTs due to small dataset training</label></p></li>
+</ul>
+<h4 id="future-ideas">Future ideas</h4>
+<blockquote>
+<p>MIL can only be used on weak-level / slide-level / world-level
+supervised learning</p>
+</blockquote>
+<ul>
+<li>Find WSI dataset, preprocess into patches and create feature vectors
+with pre-trained CNNs. Performing weak-level (slide-level)
+classification
+<ul>
+<li>Based on CLAM architecture with flask evaluation visualization</li>
+</ul></li>
+<li>Tissue segmentation</li>
+</ul>
+<h3 id="dataset-description">Dataset Description</h3>
+<ul>
+<li><p><a
+href="https://www.cancerimagingarchive.net/collection/tcga-read/">TCIA
+Rectum Cancer / TCGA-READ</a></p></li>
+<li><p>LungHist700 <a
+href="https://doi.org/10.1038/s41597-024-03944-3">(Diosdado et al.,
+2024)</a></p>
+<ul>
+<li>“Accurate detection and classification of lung malignancies are
+crucial for early diagnosis, treatment planning, and patient
+prognosis.”</li>
+<li>“… a dataset of 691 high-resolution (1200 × 1600 pixels)
+histopathological lung images, covering adenocarcinomas, squamous cell
+carcinomas, and normal tissues from 45 patients. These images are
+subdivided into three differentiation levels for both pathological
+types: well, moderately, and poorly differentiated, resulting in seven
+classes for classification. The dataset includes images at 20x and 40x
+magnification, reflecting real clinical diversity.”</li>
+</ul></li>
+</ul>
+<h3 id="pipeline">Pipeline</h3>
+<p>Due to the large pixel resolution, we divide the WSI into smaller
+pixel samples <a
+href="https://www.reddit.com/r/computervision/comments/o6f1y9/whole_slide_image_wsi_classification_with_vision/">(224x224
+pixels is recommended)</a>. We used an expert-labeled segmented dataset,
+which skips slide-level preprocessing as each patches are needed to be
+thoroughly examined by real pathologists.</p>
+<p>.. (under construction)</p>
+<h3 id="dataset-setup">Dataset Setup</h3>
+<p>Download the dataset <a
+href="https://figshare.com/articles/dataset/LungHist700_A_Dataset_of_Histological_Images_for_Deep_Learning_in_Pulmonary_Pathology/25459174">online</a>,
+extract it and place onto the <code>data/</code> folder for
+analysis.</p>
+<h2 id="references">References</h2>
+<ul>
+<li><p>Gul, A. G., Cetin, O., Reich, C., Flinner, N., Prangemeier, T.,
+&amp; Koeppl, H. (2022). Histopathological image classification based on
+self-supervised vision transformer and weak labels. Medical Imaging
+2022: Digital and Computational Pathology, 57.
+https://doi.org/10.1117/12.2624609 <a
+href="https://arxiv.org/abs/2210.09021">(link)</a></p></li>
+<li><p>nghihuynh. (2022, August 10). MayoClinic: WSI preprocessing +
+Tiling. Kaggle.com; Kaggle. <a
+href="https://www.kaggle.com/code/nghihuynh/mayoclinic-wsi-preprocessing-tiling">(link)</a></p></li>
+</ul>
+<script>(function(){var es=new EventSource("http://localhost:44541/__live/events");es.addEventListener("reload",function(){location.reload();});})()</script>
+</body>
+</html>

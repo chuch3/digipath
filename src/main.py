@@ -6,10 +6,6 @@ from pydicom import dcmread
 from config import _SAMPLE_TCGA_DCM_FILE
 
 
-def tissue_segment():
-    pass
-
-
 def main():
     ds = dcmread(_SAMPLE_TCGA_DCM_FILE)
     plt.imshow(ds.pixel_array)

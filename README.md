@@ -12,14 +12,36 @@ Digital pathology is proven to improve workflows by 13% and clear return on inve
 establishing cost advantage over traditional MRI consultations and providing lab revenue.
 
 [(Wilson et al., 2017)](https://clpmag.com/diagnostic-technologies/digital-pathology/digital-pathology-gives-rise-computational-pathology/)
+
 ## Todo
 
 Goal : Create a strong-level / patch-level WSI (Whole-Slide Image) lung tumor Classification with good results
 
 > i know this is keywordy but bare with me mister
 
+```mermaid
+graph TD
+    A ["LungHist700 Dataset"] --> B ["Dataset loading"]
+    B --> B1 [""]
+    B --> B2 ["Review again on online guides"]
+    B --> B3 ["Resizing / data augmentation for better performance"]
+    B --> B4 ["Dataset split 80% train, 10% test, 10% valid"]
+    B --> B5 ["Use metadata csv to map data"]
+
+    A --> C["EDA Analysis"]
+    A --> C["Attention-based models like simple ViTs due to small dataset training"]
+B1 ```
+
+
 - [ ] Create pytorch ImageFolder dataset over LungHist700 dataset. Refer the target class based on the paper. (Data Loading)
-- [ ] Use a light and good pretrained CNNs to train on the dataset 
+    - review again on online guides
+    - resizing / data augmentation for better performance
+    - dataset split 80% train, 10% test, 10% valid
+    - use metadata csv to map data
+
+- [ ] EDA analysis (?)
+
+- [ ] Attention-based models like simple ViTs due to small dataset training
 
 #### Future ideas
 
