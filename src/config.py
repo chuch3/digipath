@@ -1,0 +1,12 @@
+from pathlib import Path
+
+_PROJECT_DIR = Path.cwd().parent
+
+_DATA_DIR = Path(*[_PROJECT_DIR, "data"])
+
+_SAMPLE_TCGA_DCM_FILE = Path(
+    *[
+        _DATA_DIR,
+        "TCIA_TCGA-READ/tcga_read/TCGA-BM-6198/1.3.6.1.4.1.14519.5.2.1.8421.4018.304030957341830836628192929917/1.3.6.1.4.1.14519.5.2.1.8421.4018.115796396159931879291210366669/02df0692-f5d6-4f6e-98aa-f5da72d4421c.dcm",
+    ]
+)
