@@ -18,13 +18,6 @@ class LungHist700Dataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         image_path = os.path.join(self.data_dir, self.images[index])
-        image = np.array(Image.open(image_path))
-
-        # Applying the transform
-        if self.transform:
-            image = self.transform(image)
-
-        return image
 
 
 def load_dataset():
