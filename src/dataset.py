@@ -28,9 +28,21 @@ class LungHist700Dataset(Dataset):
     - "pd" (poorly differentiated)
     """
 
-    def __init__(self, csv_file, root_dir, transform=None) -> None:
+    def __init__(
+        self,
+        csv_file,
+        root_dir,
+        transform=None,
+        loader=lambda p: Image.open(p).convert("RGB"),
+    ) -> None:
         self.metadata: pd.DateFrame = pd.read_csv(csv_file)
-        self.paths = list(Path(LUNG_IMAGES_DIR).rglob("*"))
+        self.paths = list(
+            path for path in Path(LUNG_IMAGES_DIR).rglob("*") if path.is_file()
+        )
+
+        # Each sample contains a `(path, label)` format for training
+        self.sample = [(path, str(path.parent.name)) for path in self.paths]
+
         self.label_map = {
             label: i
             for (i, label) in enumerate(
@@ -39,23 +51,22 @@ class LungHist700Dataset(Dataset):
                 .fillna("nor")
             )
         }
+        self.loader = loader
 
-        self.labels = self.label_map.keys()
-
-        # Each sample contains a `(path, label)` format for training
-        self.sample = [(path, str(path.parent.name)) for path in self.paths]
+        for path, label in self.sample:
+            print(path, label)
 
         self.transform = transform
 
-    def get_label(self, path: Path):
-        label = path.name
-        return label
-
     def __len__(self):
-        return len(self.images)
+        return len(self.sample)
 
-    def __getitem__(self):
-        pass
+    def __getitem__(self, idx):
+        path, label = self.sample[idx]
+        image = self.loader(path)
+        if self.transform:
+            self.transform(image)
+        return (image, label)
 
 
 def load_dataset():
