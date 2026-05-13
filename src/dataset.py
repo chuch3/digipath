@@ -1,33 +1,68 @@
 import os
+from math import nan
+from pathlib import Path
 
+import pandas as pd
 import torch
-from torch.utils.data import DataLoader
+from PIL import Image
+from torch.utils.data import DataLoader, Dataset
 from torchvision.datasets import ImageFolder
 
-from config import _LUNG_DIR
+from config import LUNG_IMAGES_DIR, LUNG_METADATA_FILE
 
 
-class LungHist700Dataset(torch.utils.data.Dataset):
-    def __init__(self, dir, transform=None):
-        self.data_dir = dir
-        self.images = os.listdir(dir)
+class LungHist700Dataset(Dataset):
+    """
+    Lung Histopathological Dataset Information
+
+    Each image has a resolution of 1200 x 1600 pixels in `.jpg` format
+
+    Superclasses:
+    - “aca” (adenocarcinoma)
+    - “scc” (squamous cell carcinoma)
+    - “nor” (normal)
+
+    Subclasses:
+    - "wd" (well differentiated)
+    - "md" (moderately differentiated)
+    - "pd" (poorly differentiated)
+    """
+
+    def __init__(self, csv_file, root_dir, transform=None) -> None:
+        self.metadata: pd.DateFrame = pd.read_csv(csv_file)
+        self.paths = list(Path(LUNG_IMAGES_DIR).glob("*"))
+        self.label_map = {
+            label: i
+            for (i, label) in enumerate(
+                (self.metadata["superclass"] + "_" + self.metadata["subclass"])
+                .unique()
+                .fillna("nor")
+            )
+        }
+        for i in self.paths:
+            print(i)
         self.transform = transform
+
+    def get_label(self, path: Path):
+        label = path.name
+        return label
 
     def __len__(self):
         return len(self.images)
 
-    def __getitem__(self, index):
-        image_path = os.path.join(self.data_dir, self.images[index])
+    def __getitem__(self):
+        pass
 
 
 def load_dataset():
-    data = ImageFolder(root=_LUNG_DIR)
+    # Image file naming convention for LungHist700 : "{label}_{resolution}_{image_id}_{patient_id}.jpg"
+    data = LungHist700Dataset(csv_file=LUNG_METADATA_FILE, root_dir=LUNG_IMAGES_DIR)
+    pass
 
-    loader = DataLoader(
-        data,
-        shuffle=True,
-    )
+
+def main():
+    load_dataset()
 
 
 if __name__ == "__main__":
-    load_dataset()
+    main()
