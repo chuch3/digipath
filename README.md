@@ -33,10 +33,13 @@ graph TD
 
 
 - [ ] Create pytorch ImageFolder dataset over LungHist700 dataset. Refer the target class based on the paper. (Data Loading)
-    - review again on online guides
+    - [ ] Conduct patient-wise strategy ensuring that images from the same patient were placed
+in the same set to ensure fair evaluation and prevent data leakage.
+
+    - "The DNN model used in both methods was a ResNet50 network pretrained on ImageNet. The Adam optimizer was employed with an initial learning rate of 1e-5, which was reduced by a factor of 0.1 if the model began to overfit. Categorical cross-entropy was used as the loss function in both experiments. The Albumentations library25 was utilized to generate augmentations on the fly during training."
+
     - resizing / data augmentation for better performance
     - dataset split 80% train, 10% test, 10% valid
-    - use metadata csv to map data
 
 - [ ] EDA analysis (?)
 
