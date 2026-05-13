@@ -30,7 +30,7 @@ class LungHist700Dataset(Dataset):
 
     def __init__(self, csv_file, root_dir, transform=None) -> None:
         self.metadata: pd.DateFrame = pd.read_csv(csv_file)
-        self.paths = list(Path(LUNG_IMAGES_DIR).glob("*"))
+        self.paths = list(Path(LUNG_IMAGES_DIR).rglob("*"))
         self.label_map = {
             label: i
             for (i, label) in enumerate(
@@ -39,8 +39,12 @@ class LungHist700Dataset(Dataset):
                 .fillna("nor")
             )
         }
-        for i in self.paths:
-            print(i)
+
+        self.labels = self.label_map.keys()
+
+        # Each sample contains a `(path, label)` format for training
+        self.sample = [(path, str(path.parent.name)) for path in self.paths]
+
         self.transform = transform
 
     def get_label(self, path: Path):
@@ -56,8 +60,7 @@ class LungHist700Dataset(Dataset):
 
 def load_dataset():
     # Image file naming convention for LungHist700 : "{label}_{resolution}_{image_id}_{patient_id}.jpg"
-    data = LungHist700Dataset(csv_file=LUNG_METADATA_FILE, root_dir=LUNG_IMAGES_DIR)
-    pass
+    LungHist700Dataset(csv_file=LUNG_METADATA_FILE, root_dir=LUNG_IMAGES_DIR)
 
 
 def main():
