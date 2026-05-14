@@ -12,14 +12,44 @@ Digital pathology is proven to improve workflows by 13% and clear return on inve
 establishing cost advantage over traditional MRI consultations and providing lab revenue.
 
 [(Wilson et al., 2017)](https://clpmag.com/diagnostic-technologies/digital-pathology/digital-pathology-gives-rise-computational-pathology/)
+
 ## Todo
 
 Goal : Create a strong-level / patch-level WSI (Whole-Slide Image) lung tumor Classification with good results
 
 > i know this is keywordy but bare with me mister
 
-- [ ] Create pytorch ImageFolder dataset over LungHist700 dataset. Refer the target class based on the paper. (Data Loading)
-- [ ] Use a light and good pretrained CNNs to train on the dataset 
+```mermaid
+graph TD
+    A["LungHist700 Dataset"] --> B["Dataset loading"]
+    B --> B1["Review again on online guides"]
+    B --> B2["Resizing / data augmentation for better performance"]
+    B --> B3["Dataset split 80% train, 10% test, 10% valid"]
+    B --> B4["Use metadata csv to map data"]
+
+    A --> D["Attention-based models like simple ViTs due to small dataset training"]
+```
+
+
+- Dataset loading & preprocessing
+    - [x] Create pytorch ImageFolder dataset over LungHist700 dataset. Refer the target class based on the paper. (Data Loading)
+    - [x] LungHist700 file path labeling
+    - [x] Conduct patient-wise splits ensuring that images from the same patient were placed in the same set to ensure fair evaluation and prevent data leakage.
+    - [ ] Loading into dataset image / transform loaders
+    - [ ] Data augmentation and resizing for pre-trained ViT
+
+- Model training
+    - [ ] Setup model training, optimizers, loss function, etc
+    - [ ] Evaluate based on LungHist700 paper via CAM and k means-CV
+
+> "The DNN model used in both methods was a ResNet50 network pretrained on ImageNet. The Adam optimizer was employed with an initial learning rate of 1e-5, which was reduced by a factor of 0.1 if the model began to overfit. Categorical cross-entropy was used as the loss function in both experiments. The Albumentations library25 was utilized to generate augmentations on the fly during training." from LungHist700 whitepaper
+
+- resizing / data augmentation for better performance
+- dataset split 80% train, 10% test, 10% valid
+
+- [ ] EDA analysis (?)
+
+- [ ] Attention-based models like simple ViTs due to small dataset training
 
 #### Future ideas
 

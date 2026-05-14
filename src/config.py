@@ -1,13 +1,11 @@
 from pathlib import Path
 
-_PROJECT_DIR = Path.cwd().parent
+PROJECT_DIR = Path.cwd().parent
 
-_DATA_LUNG_DIR = Path(*[_PROJECT_DIR, "data", "LungHist700"])
+LUNG_DIR = Path(*[PROJECT_DIR, "data", "LungHist700"])
+LUNG_IMAGES_DIR = Path(*[LUNG_DIR, "images"])
+LUNG_METADATA_FILE = Path(*[LUNG_DIR, "data.csv"])
 
-_METADATA_FILE = Path(*[_PROJECT_DIR, ""])
-
-_SAMPLE_TCGA_DCM_FILE = Path(
-    *[
-        _DATA_LUNG_DIR,
-    ]
-)
+TRAIN_SPLIT = 0.8
+TEST_SPLIT = 0.1
+VALID_SPLIT = 0.1
