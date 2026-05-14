@@ -36,16 +36,42 @@ class LungHist700Dataset(Dataset):
         csv_file,
         root_dir,
     ) -> None:
-        print("=> Loading LungHist700 dataset from root")
-        self._metadata: pd.DateFrame = pd.read_csv(csv_file)
 
+        print("=> Loading LungHist700 dataset from root")
+
+        self._meta: pd.DateFrame = pd.read_csv(csv_file)
+
+        self._meta = self._meta.fillna("")  # Filling NaN from subclasses of `nor`
+
+        print(self._meta.info())
+
+        cols = ["superclass", "subclass", "resolution", "image_id"]
+
+        """
+        As the provided dataset doesn't include the patient ID within the filepaths, 
+        we have to map using the metadata provided for patient-level stratify sampling. 
+        Amazing :) ....
+
+        Conveniently (not), the filename matches the composite join of each of series excluding
+        patient ID. So, we create the compostie keys as index to locate the patient's ID. daammmmmnnn
+        """
+        self._meta.index = (
+            self._meta[cols]
+            .astype(str)
+            .apply(lambda row: "_".join(part for part in row if part.strip()), axis=1)
+        )  # Creates composite key index by joining each series as strings and stripping empty subclasses
+
+        # Each sample contains a `(path, label, pid)` format for training
         self._paths = list(
             path for path in Path(LUNG_IMAGES_DIR).rglob("*") if path.is_file()
         )
 
-        # Each sample contains a `(path, label, pid)` format for training
         self._sample = [
-            (path, str(path.parent.name), path.stem.split("_")[-1])
+            (
+                path,
+                str(path.parent.name),
+                self._meta.loc[path.stem]["patient_id"],
+            )
             for path in self._paths
         ]
 
@@ -53,23 +79,25 @@ class LungHist700Dataset(Dataset):
 
         self._sample_df = pd.DataFrame(
             self._sample,
-            columns=["path", "label", "pid"],
+            columns=["path", "label", "patient_id"],
         )
 
         # Label map doesn't have to be in getter as it's rarely modified in datasets
         self.label_map = {
             label: i
             for (i, label) in enumerate(
-                (self._metadata["superclass"] + "_" + self._metadata["subclass"])
-                .unique()
-                .fillna("nor")
+                (self._meta["superclass"] + "_" + self._meta["subclass"]).unique()
             )
         }
+        self.label_map["nor"] = self.label_map.pop(
+            "nor_"
+        )  # NOTE: this logic can be optimized more but whateves
+
         assert len(self.label_map) == 7  # checking for proper dataset
 
     # Dataset must be copied before modifying, hence copy wrapper
     @property
-    def df(self):
+    def df(self) -> pd.DataFrame:
         return self._sample_df.copy()
 
     def __len__(self):
@@ -118,26 +146,39 @@ def load_dataset(random_state=42):
     # Image file naming convention for LungHist700 : "{label}_{resolution}_{image_id}_{patient_id}.jpg"
     data = LungHist700Dataset(csv_file=LUNG_METADATA_FILE, root_dir=LUNG_IMAGES_DIR)
     df = data.df
-    X, y, groups = df["path"], df["label"], df["pid"]
-
-    X_train, X_temp, y_train, y_temp = train_test_split(
-        X, y, test_size=0.2, random_state=random_state
-    )
-    X_valid, X_test, y_valid, y_test = train_test_split(
-        X_temp, y_temp, test_size=0.5, random_state=random_state
-    )
+    df["label_encode"] = df["label"].map(data.label_map)
 
     rich.print(
         Panel(
-            "Dataset Split Statistics (%) : \n"
-            f"Train split : {X_train.size / len(df):.4f}%\n"
-            f"Validation splt : {X_test.size / len(df):.4f}%\n"
-            f"Test splt : {X_valid.size / len(df):.4f}%"
+            "Target Label Statistics\n"
+            "----------\n"
+            f"Label map: {data.label_map}\n\n"
+            f"{df['label_encode'].value_counts()}"
         )
     )
 
+    gss = GroupShuffleSplit(n_splits=1, train_size=0.8, random_state=42)
+
     # Stratify splitting and shuffle based on groups (patients)
-    # train_index, test_index = gss.split(X=df["path"], y=df["label"], groups=df["pid"])
+    train_index, temp_index = next(
+        gss.split(X=df["path"], y=df["label"], groups=df["patient_id"])
+    )
+    temp_df = df.iloc[temp_index]
+
+    a, b = train_test_split(temp_df, test_size=0.5, stratify=temp_df["patient_id"])
+    print(a, b)
+
+    train_df = df.loc[train_index].reset_index(drop=True)
+
+    rich.print(
+        Panel(
+            "Dataset Split Statistics\n"
+            "----------\n"
+            f"Train split : {len(train_df) / len(df) * 100:.4f}%"
+            # f"Validation splt : {X_test.size / len(df):.4f}%\n"
+            # f"Test splt : {X_valid.size / len(df):.4f}%"
+        )
+    )
 
 
 def main():
