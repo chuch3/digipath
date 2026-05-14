@@ -146,39 +146,62 @@ def load_dataset(random_state=42):
     # Image file naming convention for LungHist700 : "{label}_{resolution}_{image_id}_{patient_id}.jpg"
     data = LungHist700Dataset(csv_file=LUNG_METADATA_FILE, root_dir=LUNG_IMAGES_DIR)
     df = data.df
-    df["label_encode"] = df["label"].map(data.label_map)
+    # NOTE : Encoding for training
+    df["label"] = df["label"].map(data.label_map)
 
     rich.print(
         Panel(
-            "Target Label Statistics\n"
+            "LungHist700 Target Label Statistics\n"
             "----------\n"
             f"Label map: {data.label_map}\n\n"
-            f"{df['label_encode'].value_counts()}"
+            f"{df['label'].value_counts()}"
         )
     )
 
-    gss = GroupShuffleSplit(n_splits=1, train_size=0.8, random_state=42)
+    # TODO:
+    # - [ ] Split datasets via patient-level and load into LungImageLoaderDataset
+    # - [ ] Start encoding and shit for model training
 
-    # Stratify splitting and shuffle based on groups (patients)
-    train_index, temp_index = next(
-        gss.split(X=df["path"], y=df["label"], groups=df["patient_id"])
+    X, y = df[["path", "patient_id"]], df["label"]
+
+    # Keeps the groups together in patient-level with shuffling , not stratification
+    gss_1 = GroupShuffleSplit(
+        n_splits=1,
+        train_size=0.8,
+        random_state=random_state,
     )
-    temp_df = df.iloc[temp_index]
 
-    a, b = train_test_split(temp_df, test_size=0.5, stratify=temp_df["patient_id"])
-    print(a, b)
+    train_index, temp_index = next(gss_1.split(X, y, X["patient_id"]))
 
-    train_df = df.loc[train_index].reset_index(drop=True)
+    X_temp, y_temp = (
+        X.iloc[temp_index].reset_index(drop=True),
+        y.iloc[temp_index].reset_index(drop=True),
+    )
 
+    gss_2 = GroupShuffleSplit(
+        n_splits=1,
+        train_size=0.5,
+        random_state=random_state,
+    )
+
+    test_index, valid_index = next(gss_2.split(X_temp, y_temp, X_temp["patient_id"]))
+
+    X_test, y_test = X.iloc[test_index], y.iloc[test_index]
+    X_valid, y_valid = X.iloc[valid_index], y.iloc[valid_index]
+    X_train, y_train = X.iloc[train_index], y.iloc[train_index]
+
+    # The splits arent' as accurate as (80/10/10) due to patient-level splits
     rich.print(
         Panel(
-            "Dataset Split Statistics\n"
+            "LungHist700 Dataset Split Statistics (Patient-Level)\n"
             "----------\n"
-            f"Train split : {len(train_df) / len(df) * 100:.4f}%"
-            # f"Validation splt : {X_test.size / len(df):.4f}%\n"
-            # f"Test splt : {X_valid.size / len(df):.4f}%"
+            f"Train split : {len(X_train) / len(df) * 100:.4f}%\n"
+            f"Validation splt : {X_test.size / len(df) * 100:.4f}%\n"
+            f"Test splt : {X_valid.size / len(df) * 100:.4f}%"
         )
     )
+
+    return train_index, test_index, valid_index
 
 
 def main():
