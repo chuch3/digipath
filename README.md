@@ -33,6 +33,7 @@ graph TD
 
 
 - [ ] Create pytorch ImageFolder dataset over LungHist700 dataset. Refer the target class based on the paper. (Data Loading)
+    - [x] LungHist700 file path labeling
     - [ ] Conduct patient-wise strategy ensuring that images from the same patient were placed
 in the same set to ensure fair evaluation and prevent data leakage.
 
