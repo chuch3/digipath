@@ -1,20 +1,19 @@
+import os
 from pathlib import Path
 
 import pandas as pd
 import rich
-import torch
-from matplotlib.pyplot import imshow
-from PIL import Image
 from rich.panel import Panel
-from sklearn.model_selection import GroupShuffleSplit, train_test_split
-from torch.utils.data import DataLoader, Dataset
+from sklearn.model_selection import GroupShuffleSplit
+from torch.utils.data import Dataset
 
-from config import LUNG_IMAGES_DIR, LUNG_METADATA_FILE
+from config import LUNG_IMAGES_DIR, LUNG_LOADED_FILE, LUNG_METADATA_FILE
 
 
 class LungHist700Dataset(Dataset):
     """
     # Lung Histopathological Dataset Information
+
 
     Each image has a resolution of 1200 x 1600 pixels in `.jpg` format with 691 Records in total.
 
@@ -37,7 +36,7 @@ class LungHist700Dataset(Dataset):
         root_dir,
     ) -> None:
 
-        print("=> Loading LungHist700 dataset from root")
+        print(f"=> Loading metada `{csv_file}` from root `{root_dir}`\n")
 
         self._meta: pd.DateFrame = pd.read_csv(csv_file)
 
@@ -48,12 +47,13 @@ class LungHist700Dataset(Dataset):
         cols = ["superclass", "subclass", "resolution", "image_id"]
 
         """
-        As the provided dataset doesn't include the patient ID within the filepaths, 
-        we have to map using the metadata provided for patient-level stratify sampling. 
-        Amazing :) ....
+        As the provided dataset didn't include patient IDs within the filepaths, 
+        we have to map using the metadata provided for patient-level group sampling. 
 
-        Conveniently (not), the filename matches the composite join of each of series excluding
-        patient ID. So, we create the compostie keys as index to locate the patient's ID. daammmmmnnn
+        Amazing...
+
+        Conveniently (not), the filename matches the string join of each of series excluding
+        patient ID. Hence, we create the composite keys as index to locate the patient's ID. 
         """
         self._meta.index = (
             self._meta[cols]
@@ -61,7 +61,7 @@ class LungHist700Dataset(Dataset):
             .apply(lambda row: "_".join(part for part in row if part.strip()), axis=1)
         )  # Creates composite key index by joining each series as strings and stripping empty subclasses
 
-        # Each sample contains a `(path, label, pid)` format for training
+        # Each sample contains a `(path, label, patient_id)` format for training
         self._paths = list(
             path for path in Path(LUNG_IMAGES_DIR).rglob("*") if path.is_file()
         )
@@ -75,14 +75,15 @@ class LungHist700Dataset(Dataset):
             for path in self._paths
         ]
 
-        assert len(self._sample) == 691  # checking for proper dataset
+        assert len(self._sample) == 691  # Checking for proper dataset
 
         self._sample_df = pd.DataFrame(
             self._sample,
             columns=["path", "label", "patient_id"],
         )
 
-        # Label map doesn't have to be in getter as it's rarely modified in datasets
+        # Label map doesn't have to be in getter method as it's rarely modified in datasets
+        # {'aca_bd': 0, 'aca_md': 1, 'aca_pd': 2, 'scc_bd': 3, 'scc_md': 4, 'scc_pd': 5, 'nor': 6}
         self.label_map = {
             label: i
             for (i, label) in enumerate(
@@ -91,9 +92,9 @@ class LungHist700Dataset(Dataset):
         }
         self.label_map["nor"] = self.label_map.pop(
             "nor_"
-        )  # NOTE: this logic can be optimized more but whateves
+        )  # NOTE: this logic can be optimized further but whateves
 
-        assert len(self.label_map) == 7  # checking for proper dataset
+        assert len(self.label_map) == 7  # Checking for proper dataset
 
     # Dataset must be copied before modifying, hence copy wrapper
     @property
@@ -104,50 +105,11 @@ class LungHist700Dataset(Dataset):
         return len(self._sample)
 
 
-# i don't know how to stratify split directly from torch `Dataset`, so df will do for now
-#
-# splliting requires dataframes, dataloader requires `Dataset`s ... bruh
-
-
-class LungImageLoaderDataset(Dataset):
-    """
-    PIL Image loader of the LungImage700 dataset after dataset split.
-
-    NOTE: This dataset loader is not generic and has to be modified for preference
-    """
-
-    def __init__(
-        self,
-        df: pd.DataFrame,
-        transform=None,
-        loader=lambda p: Image.open(p, "r").convert("RGB"),
-    ) -> None:
-        self._df = df
-        self._loader = loader
-        self._transform = transform
-
-    def __len__(self):
-        return len(self._df)
-
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
-        row = self._df.iloc[idx]
-        image = self.loader(row["path"])
-
-        if self.transform:
-            self.transform(image)
-
-        return (image, row["label"], row["pid"])
-
-
 def load_dataset(random_state=42):
     # Image file naming convention for LungHist700 : "{label}_{resolution}_{image_id}_{patient_id}.jpg"
     data = LungHist700Dataset(csv_file=LUNG_METADATA_FILE, root_dir=LUNG_IMAGES_DIR)
     df = data.df
-    # NOTE : Encoding for training
-    df["label"] = df["label"].map(data.label_map)
+    df["label"] = df["label"].map(data.label_map)  # Multi-class encoding for training
 
     rich.print(
         Panel(
@@ -158,24 +120,13 @@ def load_dataset(random_state=42):
         )
     )
 
-    # TODO:
-    # - [ ] Split datasets via patient-level and load into LungImageLoaderDataset
-    # - [ ] Start encoding and shit for model training
-
     X, y = df[["path", "patient_id"]], df["label"]
 
-    # Keeps the groups together in patient-level with shuffling , not stratification
+    # Keeps the groups together in patient-level with shuffling, not stratification
     gss_1 = GroupShuffleSplit(
         n_splits=1,
-        train_size=0.8,
+        train_size=0.7,
         random_state=random_state,
-    )
-
-    train_index, temp_index = next(gss_1.split(X, y, X["patient_id"]))
-
-    X_temp, y_temp = (
-        X.iloc[temp_index].reset_index(drop=True),
-        y.iloc[temp_index].reset_index(drop=True),
     )
 
     gss_2 = GroupShuffleSplit(
@@ -184,24 +135,41 @@ def load_dataset(random_state=42):
         random_state=random_state,
     )
 
-    test_index, valid_index = next(gss_2.split(X_temp, y_temp, X_temp["patient_id"]))
+    train_idx, temp_idx = next(gss_1.split(X, y, X["patient_id"]))
 
-    X_test, y_test = X.iloc[test_index], y.iloc[test_index]
-    X_valid, y_valid = X.iloc[valid_index], y.iloc[valid_index]
-    X_train, y_train = X.iloc[train_index], y.iloc[train_index]
+    X_temp, y_temp = (
+        X.iloc[temp_idx].reset_index(drop=True),
+        y.iloc[temp_idx].reset_index(drop=True),
+    )
+
+    test_idx, valid_idx = next(gss_2.split(X_temp, y_temp, X_temp["patient_id"]))
+
+    """
+    X_test, y_test = X.iloc[test_idx ], y.iloc[test_idx ]
+    X_valid, y_valid = X.iloc[valid_idx ], y.iloc[valid_idx ]
+    X_train, y_train = X.iloc[train_idx ], y.iloc[train_idx ]
+    """
 
     # The splits arent' as accurate as (80/10/10) due to patient-level splits
     rich.print(
         Panel(
             "LungHist700 Dataset Split Statistics (Patient-Level)\n"
             "----------\n"
-            f"Train split : {len(X_train) / len(df) * 100:.4f}%\n"
-            f"Validation splt : {X_test.size / len(df) * 100:.4f}%\n"
-            f"Test splt : {X_valid.size / len(df) * 100:.4f}%"
+            f"Train split : {len(train_idx) / len(df) * 100:.4f}%\n"
+            f"Validation splt : {len(test_idx) / len(df) * 100:.4f}%\n"
+            f"Test splt : {len(valid_idx) / len(df) * 100:.4f}%"
         )
     )
 
-    return train_index, test_index, valid_index
+    # Check if the data loaded file exists or not
+    print("=> Checking if loaded dataset exists.")
+    if not os.path.isfile(LUNG_LOADED_FILE):
+        print(f"=> Loaded dataset doesn't exist! Saving to `{LUNG_LOADED_FILE}`")
+        df.to_csv(LUNG_LOADED_FILE, encoding="utf-8", header=True, index=False)
+    else:
+        print("=> Loaded dataset already exists, continuing process.")
+
+    return train_idx, valid_idx, test_idx, data.label_map
 
 
 def main():
