@@ -6,7 +6,6 @@ import torch.nn as nn
 import torchvision
 from matplotlib.pyplot import imshow
 from PIL import Image
-from rich.progress import track
 from torch.optim import Adam
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
