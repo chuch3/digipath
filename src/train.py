@@ -131,7 +131,7 @@ def train(
 
         accuracy_batch = loss_batch = 0
 
-        for image_batch, label_batch in tqdm(train_loader, desc="> Batch processing"):
+        for image_batch, label_batch in train_loader:
             logits = model.forward(image_batch)
             loss = loss_fn(logits, label_batch)
             optimizer.zero_grad()

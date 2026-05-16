@@ -36,13 +36,12 @@ class LungHist700Dataset(Dataset):
         root_dir,
     ) -> None:
 
-        print(f"=> Loading metada `{csv_file}` from root `{root_dir}`\n")
+        print(f"=> Metadata file : `{csv_file}` ")
+        print(f"=> Root directory : `{root_dir}`")
 
         self._meta: pd.DateFrame = pd.read_csv(csv_file)
 
         self._meta = self._meta.fillna("")  # Filling NaN from subclasses of `nor`
-
-        print(self._meta.info())
 
         cols = ["superclass", "subclass", "resolution", "image_id"]
 
