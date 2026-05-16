@@ -105,9 +105,14 @@ class LungHist700Dataset(Dataset):
         return len(self._sample)
 
 
-def load_dataset(random_state=42):
+def load_dataset(
+    csv_file=LUNG_METADATA_FILE,
+    root_dir=LUNG_IMAGES_DIR,
+    load_file=LUNG_LOADED_FILE,
+    random_state=42,
+):
     # Image file naming convention for LungHist700 : "{label}_{resolution}_{image_id}_{patient_id}.jpg"
-    data = LungHist700Dataset(csv_file=LUNG_METADATA_FILE, root_dir=LUNG_IMAGES_DIR)
+    data = LungHist700Dataset(csv_file, root_dir)
     df = data.df
     df["label"] = df["label"].map(data.label_map)  # Multi-class encoding for training
 
@@ -163,9 +168,9 @@ def load_dataset(random_state=42):
 
     # Check if the data loaded file exists or not
     print("=> Checking if loaded dataset exists.")
-    if not os.path.isfile(LUNG_LOADED_FILE):
-        print(f"=> Loaded dataset doesn't exist! Saving to `{LUNG_LOADED_FILE}`")
-        df.to_csv(LUNG_LOADED_FILE, encoding="utf-8", header=True, index=False)
+    if not os.path.isfile(load_file):
+        print(f"=> Loaded dataset doesn't exist! Saving to `{load_file}`")
+        df.to_csv(load_file, encoding="utf-8", header=True, index=False)
     else:
         print("=> Loaded dataset already exists, continuing process.")
 

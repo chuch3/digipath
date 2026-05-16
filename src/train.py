@@ -13,7 +13,7 @@ from torchvision import transforms
 from torchvision.models import ViT_B_16_Weights
 from tqdm import tqdm
 
-from constant import LUNG_LOADED_FILE
+from constant import LUNG_IMAGES_DIR, LUNG_LOADED_FILE, LUNG_METADATA_FILE
 from dataset import load_dataset
 
 
@@ -54,11 +54,21 @@ class LungImageLoaderDataset(Dataset):
 # - [ ] Masks by Grad-CAM algorithm on last convolution layer
 
 
-def train(batch_size=8, lr=1e-1, epochs=200, random_state=42):
+def train(
+    batch_size=8,
+    lr=1e-1,
+    epochs=200,
+    random_state=42,
+    csv_file=LUNG_METADATA_FILE,
+    root_dir=LUNG_IMAGES_DIR,
+    load_file=LUNG_LOADED_FILE,
+):
     # This guarantees the loaded dataset is built before reading
-    train_idx, valid_idx, test_idx, label_map = load_dataset()
+    train_idx, valid_idx, test_idx, label_map = load_dataset(
+        csv_file, root_dir, load_file
+    )
 
-    df = pd.read_csv(LUNG_LOADED_FILE, encoding="utf-8")
+    df = pd.read_csv(load_file, encoding="utf-8")
 
     train_valid_transform = transforms.Compose(
         [
@@ -116,12 +126,12 @@ def train(batch_size=8, lr=1e-1, epochs=200, random_state=42):
 
     current_run = 0
 
-    for e in track(range(epochs), description=f"Training {current_run}:"):
+    for e in tqdm(range(epochs), desc="> Training~ "):
         model.train()
 
         accuracy_batch = loss_batch = 0
 
-        for image_batch, label_batch in track(train_loader, description="Batches"):
+        for image_batch, label_batch in tqdm(train_loader, desc="> Batch processing"):
             logits = model.forward(image_batch)
             loss = loss_fn(logits, label_batch)
             optimizer.zero_grad()
