@@ -62,6 +62,7 @@ def train(
     root_dir=LUNG_IMAGES_DIR,
     load_file=LUNG_LOADED_FILE,
 ):
+    print("test")
     # This guarantees the loaded dataset is built before reading
     train_idx, valid_idx, test_idx, label_map = load_dataset(
         csv_file, root_dir, load_file
