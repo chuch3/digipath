@@ -11,6 +11,7 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 from torchvision.models import ViT_B_16_Weights
+from tqdm import tqdm
 
 from config import LUNG_LOADED_FILE
 from dataset import load_dataset
@@ -53,7 +54,7 @@ class LungImageLoaderDataset(Dataset):
 # - [ ] Masks by Grad-CAM algorithm on last convolution layer
 
 
-def train(batch_size=32, lr=1e-1, epochs=200):
+def train(batch_size=8, lr=1e-1, epochs=200, random_state=42):
     # This guarantees the loaded dataset is built before reading
     train_idx, valid_idx, test_idx, label_map = load_dataset()
 
@@ -85,51 +86,65 @@ def train(batch_size=32, lr=1e-1, epochs=200):
     train_loader, valid_loader, test_loader = (
         DataLoader(
             train_set,
-            batch_size=batch_size,
+            batch_size,
             shuffle=True,
             drop_last=True,
         ),
         DataLoader(
             valid_set,
-            batch_size=batch_size,
+            batch_size,
             shuffle=False,
             drop_last=True,
         ),
         DataLoader(
             test_set,
-            batch_size=batch_size,
+            batch_size,
             shuffle=False,
             drop_last=True,
         ),
     )
+
+    torch.manual_seed = random_state
 
     model = torchvision.models.vit_b_16(
         weights=ViT_B_16_Weights.DEFAULT, image_size=224
     )
     optimizer = Adam(model.parameters(), lr=lr)
     loss_fn = nn.CrossEntropyLoss()
+    loss_epochs = []
+    accuracy_epochs = []
 
-    for epoch in track(range(epochs)):
+    for e in track(range(epochs), description="Training epochs :"):
         model.train()
 
-        epoch_loss = 0
-        correct = 0
-        total = 0
+        accuracy_batch = loss_batch = 0
 
-        for image, label in train_loader:
+        for image_batch, label_batch in track(train_loader, description="Batches"):
+            logits = model.forward(image_batch)
+            loss = loss_fn(logits, label_batch)
             optimizer.zero_grad()
-            logits = model(image)
-            loss = loss_fn(logits, label)
             loss.backward()
             optimizer.step()
 
-            epoch_loss += loss.item()
-            pred = logits.argmax(dim=1)
-            correct += (pred == label).sum().item()
-            total += label.size(0)
+            loss_batch += loss.item()
+            accuracy_batch += (torch.argmax(logits, axis=1) == label_batch).sum().item()
 
-        acc = correct / total
-        print(f"Epoch {epoch + 1}/{epochs}, Loss: {epoch_loss:.4f}, Acc: {acc:.4f}")
+        loss_epochs.append(loss_batch / len(train_loader))
+        accuracy_epochs.append(accuracy_batch / len(train_loader.dataset))
+
+        print(
+            f"Epochs {e + 1:03d} | Train loss : {loss_epochs[-1]:.2f} | "
+            f"Train accuracy {accuracy_epochs[-1] * 100:.2f} % | "
+        )
+
+        if e % (100 - 1) == 0:
+            state = {
+                "epoch": e + 1,
+                "state_dict": model.state_dict(),
+                "optimizer": optimizer.state_dict(),
+                "loss_history": loss_epochs,
+            }
+            torch.save(state, f"LUNG_VIT_B_16_{e + 1}_EPOCHS.pth.tar")
 
 
 def main():
