@@ -7,7 +7,7 @@ from rich.panel import Panel
 from sklearn.model_selection import GroupShuffleSplit
 from torch.utils.data import Dataset
 
-from config import LUNG_IMAGES_DIR, LUNG_LOADED_FILE, LUNG_METADATA_FILE
+from constant import LUNG_IMAGES_DIR, LUNG_LOADED_FILE, LUNG_METADATA_FILE
 
 
 class LungHist700Dataset(Dataset):

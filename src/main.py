@@ -3,7 +3,7 @@
 import matplotlib.pyplot as plt
 from pydicom import dcmread
 
-from config import _SAMPLE_TCGA_DCM_FILE
+from constant import _SAMPLE_TCGA_DCM_FILE
 
 
 def main():

@@ -13,7 +13,7 @@ from torchvision import transforms
 from torchvision.models import ViT_B_16_Weights
 from tqdm import tqdm
 
-from config import LUNG_LOADED_FILE
+from constant import LUNG_LOADED_FILE
 from dataset import load_dataset
 
 
@@ -114,7 +114,9 @@ def train(batch_size=8, lr=1e-1, epochs=200, random_state=42):
     loss_epochs = []
     accuracy_epochs = []
 
-    for e in track(range(epochs), description="Training epochs :"):
+    current_run = 0
+
+    for e in track(range(epochs), description=f"Training {current_run}:"):
         model.train()
 
         accuracy_batch = loss_batch = 0
@@ -143,8 +145,11 @@ def train(batch_size=8, lr=1e-1, epochs=200, random_state=42):
                 "state_dict": model.state_dict(),
                 "optimizer": optimizer.state_dict(),
                 "loss_history": loss_epochs,
+                "acc_history": accuracy_epochs,
             }
             torch.save(state, f"LUNG_VIT_B_16_{e + 1}_EPOCHS.pth.tar")
+
+        current_run += 1
 
 
 def main():
