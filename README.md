@@ -31,16 +31,19 @@ graph TD
 ```
 
 
-- Dataset loading & preprocessing
-    - [x] Create pytorch ImageFolder dataset over LungHist700 dataset. Refer the target class based on the paper. (Data Loading)
-    - [x] LungHist700 file path labeling
-    - [x] Conduct patient-wise splits ensuring that images from the same patient were placed in the same set to ensure fair evaluation and prevent data leakage.
-    - [ ] Loading into dataset image / transform loaders
-    - [ ] Data augmentation and resizing for pre-trained ViT
-
 - Model training
-    - [ ] Setup model training, optimizers, loss function, etc
+    - [x] Setup model training, optimizers, loss function, etc
+    - [ ] Fix training issue on Google Colab 
+
     - [ ] Evaluate based on LungHist700 paper via CAM and k means-CV
+
+- Simulate Weak-level classification due to storage constraints 
+    - Slide-level predictions, attention heatmaps, MIL pooling
+
+- Self-supervised learning 
+- Stain normalization comparison
+- Out-of-distribution detection
+
 
 > "The DNN model used in both methods was a ResNet50 network pretrained on ImageNet. The Adam optimizer was employed with an initial learning rate of 1e-5, which was reduced by a factor of 0.1 if the model began to overfit. Categorical cross-entropy was used as the loss function in both experiments. The Albumentations library25 was utilized to generate augmentations on the fly during training." from LungHist700 whitepaper
 
@@ -73,13 +76,22 @@ graph TD
 Due to the large pixel resolution, we divide the WSI into smaller pixel samples [(224x224 pixels is recommended)](https://www.reddit.com/r/computervision/comments/o6f1y9/whole_slide_image_wsi_classification_with_vision/). We used an expert-labeled segmented dataset, which skips slide-level preprocessing as each patches are needed to be thoroughly examined by real pathologists. 
 
 
-.. (under construction)
+.. (this section requires more documentation)
 
 
 ### Dataset Setup 
 
 Download the dataset [online](https://figshare.com/articles/dataset/LungHist700_A_Dataset_of_Histological_Images_for_Deep_Learning_in_Pulmonary_Pathology/25459174), extract it and place onto the `data/` folder for analysis.
 
+
+### Done
+
+- Dataset loading & preprocessing
+    - [x] Create pytorch ImageFolder dataset over LungHist700 dataset. Refer the target class based on the paper. (Data Loading)
+    - [x] LungHist700 file path labeling
+    - [x] Conduct patient-wise splits ensuring that images from the same patient were placed in the same set to ensure fair evaluation and prevent data leakage.
+    - [x] Loading into dataset image / transform loaders
+    - [x] Data augmentation and resizing for pre-trained ViT
 
 ## References
 
