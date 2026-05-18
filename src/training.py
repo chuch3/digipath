@@ -49,8 +49,41 @@ class LungImageLoaderDataset(Dataset):
         return (image, row["label"])
 
 
+class LungLoaderDataset(Dataset):
+    """
+    PIL Image loader of the LungImage700 dataset after dataset split.
+
+    NOTE: This dataset loader is not generic and has to be modified for preference
+    """
+
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        transform=None,
+        loader=lambda p: Image.open(p, "r").convert("RGB"),
+    ) -> None:
+        self._df = df
+        self._loader = loader
+        self._transform = transform
+
+    def __len__(self):
+        return len(self._df)
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        row = self._df.iloc[idx]
+        image = self._loader(row["path"])
+
+        if self._transform:
+            image = self._transform(image)
+
+        return (image, row["label"])
+
+
 # TODO:
-# - [ ] Masks by Grad-CAM algorithm on last convolution layer
+# - [ ] Visual masks by Grad-CAM algorithm on last convolution layer
 
 
 def train(
@@ -62,7 +95,6 @@ def train(
     root_dir=LUNG_IMAGES_DIR,
     load_file=LUNG_LOADED_FILE,
 ):
-    print("test")
     # This guarantees the loaded dataset is built before reading
     train_idx, valid_idx, test_idx, label_map = load_dataset(
         csv_file, root_dir, load_file
@@ -131,7 +163,7 @@ def train(
 
         accuracy_batch = loss_batch = 0
 
-        for image_batch, label_batch in train_loader:
+        for image_batch, label_batch in tqdm(train_loader):
             logits = model.forward(image_batch)
             loss = loss_fn(logits, label_batch)
             optimizer.zero_grad()
