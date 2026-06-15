@@ -3,6 +3,8 @@ from pathlib import Path
 
 import pandas as pd
 import rich
+import torch
+from PIL import Image
 from rich.panel import Panel
 from sklearn.model_selection import GroupShuffleSplit
 from torch.utils.data import Dataset
@@ -60,11 +62,11 @@ class LungHist700Dataset(Dataset):
             .apply(lambda row: "_".join(part for part in row if part.strip()), axis=1)
         )  # Creates composite key index by joining each series as strings and stripping empty subclasses
 
-        # Each sample contains a `(path, label, patient_id)` format for training
         self._paths = list(
             path for path in Path(LUNG_IMAGES_DIR).rglob("*") if path.is_file()
         )
 
+        # Each sample contains a `(path, label, patient_id)` format for training
         self._sample = [
             (
                 path,
@@ -102,6 +104,39 @@ class LungHist700Dataset(Dataset):
 
     def __len__(self):
         return len(self._sample)
+
+
+class LungImageLoaderDataset(Dataset):
+    """
+    PIL Image loader of the LungImage700 dataset after dataset split.
+
+    NOTE: This dataset loader is not generic and has to be modified for preference
+    """
+
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        transform=None,
+        loader=lambda p: Image.open(p, "r").convert("RGB"),
+    ) -> None:
+        self._df = df
+        self._loader = loader
+        self._transform = transform
+
+    def __len__(self):
+        return len(self._df)
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        row = self._df.iloc[idx]
+        image = self._loader(row["path"])
+
+        if self._transform:
+            image = self._transform(image)
+
+        return (image, row["label"])
 
 
 def load_dataset(
