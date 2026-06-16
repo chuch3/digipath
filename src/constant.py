@@ -13,6 +13,9 @@ For example,
 > LUNG_DIR ("preprocess/")
     - LUNG_LOADED_DIR ("data/loaded.csv")
 
+> ...
+    - ...
+
 """
 
 PROJECT_DIR = Path.cwd().parent
@@ -24,3 +27,5 @@ LUNG_METADATA_FILE = Path(*[LUNG_DIR, "data.csv"])
 LUNG_PREPROCESS_DIR = Path(*[PROJECT_DIR, "preprocess"])
 LUNG_LOADED_FILE = Path(*[LUNG_PREPROCESS_DIR, "loaded.csv"])
 EMBEDDING_CACHE = Path(*[LUNG_PREPROCESS_DIR, "lung_embeddings.pt"])
+
+LUNG_MODEL_DIR = Path(*[PROJECT_DIR, "model"])

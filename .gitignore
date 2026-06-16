@@ -10,3 +10,5 @@ wheels/
 
 # NOTE: Remember to the specified your dataset into this folder to train 
 data/
+model/
+mock/

@@ -117,11 +117,13 @@ class LungImageLoaderDataset(Dataset):
         self,
         df: pd.DataFrame,
         transform=None,
-        loader=lambda p: Image.open(p, "r").convert("RGB"),
+        stain_normalizer=None,
+        loader=lambda p: Image.open(p).convert("RGB"),
     ) -> None:
         self._df = df
         self._loader = loader
         self._transform = transform
+        self._stain_norm = stain_normalizer
 
     def __len__(self):
         return len(self._df)
@@ -133,6 +135,9 @@ class LungImageLoaderDataset(Dataset):
         row = self._df.iloc[idx]
         image = self._loader(row["path"])
 
+        # FIX: stain normalizer not transforming
+        if self._stain_norm:
+            image = self._stain_norm(image)
         if self._transform:
             image = self._transform(image)
 

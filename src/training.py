@@ -18,11 +18,32 @@ from constant import (
     LUNG_IMAGES_DIR,
     LUNG_LOADED_FILE,
     LUNG_METADATA_FILE,
-    LUNG_PREPROCESS_DIR,
+    LUNG_MODEL_DIR,
 )
 from dataset import load_dataset
-from extract_feature import extract_embeddings
+from extract import extract_embeddings
+from macenko import MacenkoNormalizer
 from model import ClassifierHead
+
+
+def build_macenko_normalizer(df):
+    ref_path = df.iloc[0]["path"]
+    if not os.path.exists(ref_path):
+        print("=> WARNING: reference image not found, skipping stain normalization!!!")
+        return None
+    print(f"=> Stain reference image used : {ref_path}")
+
+    normalizer = MacenkoNormalizer()
+    normalizer.fit(Image.open(ref_path).convert("RGB"))
+
+    class _StainWrapper:
+        def __init__(self, n):
+            self._n = n
+
+        def __call__(self, img):
+            return self._n.transform(img)
+
+    return _StainWrapper(normalizer)
 
 
 def train(
@@ -35,10 +56,11 @@ def train(
     load_file=LUNG_LOADED_FILE,
     embedding_cache=EMBEDDING_CACHE,
     device=None,
+    use_stain_norm=True,
 ):
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"=> Using device: {device}")
+    print(f"=> Using device : {device}")
 
     torch.manual_seed(random_state)
 
@@ -49,7 +71,7 @@ def train(
 
     df = pd.read_csv(load_file, encoding="utf-8")
 
-    # Normalization parameters based on the ViT
+    # Normalization parameters based on the ViT-B-16 model
     normalize = transforms.Normalize(
         mean=[0.485, 0.456, 0.406],
         std=[0.229, 0.224, 0.225],
@@ -82,6 +104,8 @@ def train(
         valid_X, valid_y = cache["valid"]
         test_X, test_y = cache["test"]
     else:
+        stain_norm = build_macenko_normalizer(df) if use_stain_norm else None
+
         print("=> Building ViT backbone model for embedding extraction")
         backbone = torchvision.models.vit_b_16(
             weights=ViT_B_16_Weights.DEFAULT, image_size=224
@@ -92,13 +116,13 @@ def train(
         backbone.eval().to(device)
 
         train_X, train_y = extract_embeddings(
-            df, train_idx, rand_transform, backbone, device, "train"
+            df, train_idx, rand_transform, backbone, device, "train", stain_norm
         )
         valid_X, valid_y = extract_embeddings(
-            df, valid_idx, rand_transform, backbone, device, "valid"
+            df, valid_idx, det_transform, backbone, device, "valid", stain_norm
         )
         test_X, test_y = extract_embeddings(
-            df, test_idx, det_transform, backbone, device, "test"
+            df, test_idx, det_transform, backbone, device, "test", stain_norm
         )
 
         torch.save(
@@ -182,7 +206,7 @@ def train(
                 state,
                 Path(
                     *[
-                        LUNG_PREPROCESS_DIR,
+                        LUNG_MODEL_DIR,
                         f"LUNG_{model.__class__.__name__}_{e + 1}_EPOCHS.pth.tar",
                     ]
                 ),

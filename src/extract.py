@@ -6,14 +6,15 @@ from tqdm import tqdm
 from dataset import LungImageLoaderDataset
 
 
-def extract_embeddings(df, split_idx, transform, model, device, split_name):
-    dataset = LungImageLoaderDataset(df.iloc[split_idx], transform)
+def extract_embeddings(
+    df, split_idx, transform, model, device, split_name, stain_normalizer
+):
+    dataset = LungImageLoaderDataset(df.iloc[split_idx], transform, stain_normalizer)
     loader = DataLoader(dataset, batch_size=64, shuffle=False)
 
     all_features, all_labels = [], []
 
     # Removing classfication layer as we don't need the logits
-    model.heads = torch.nn.Identity()
     print(f"=> Extracting {split_name} embeddings ({len(split_idx)} images)")
 
     # NOTE: In future implementations, should return a X batch containing the MIL bag identifications and coordinates
