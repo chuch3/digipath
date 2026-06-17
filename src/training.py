@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 
+import cv2
+import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -8,55 +10,41 @@ import torchvision
 from matplotlib.pyplot import imshow
 from PIL import Image
 from torch.optim import Adam
+from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader, Dataset, TensorDataset
 from torchvision import transforms
 from torchvision.models import ViT_B_16_Weights
 from tqdm import tqdm
 
 from constant import (
-    EMBEDDING_CACHE,
     LUNG_IMAGES_DIR,
     LUNG_LOADED_FILE,
     LUNG_METADATA_FILE,
     LUNG_MODEL_DIR,
+    LUNG_PREPROCESS_DIR,
+    SSL_CHECKPOINT,
 )
 from dataset import load_dataset
 from extract import extract_embeddings
-from macenko import MacenkoNormalizer
+from macenko import build_macenko_normalizer
 from model import ClassifierHead
-
-
-def build_macenko_normalizer(df):
-    ref_path = df.iloc[0]["path"]
-    if not os.path.exists(ref_path):
-        print("=> WARNING: reference image not found, skipping stain normalization!!!")
-        return None
-    print(f"=> Stain reference image used : {ref_path}")
-
-    normalizer = MacenkoNormalizer()
-    normalizer.fit(Image.open(ref_path).convert("RGB"))
-
-    class _StainWrapper:
-        def __init__(self, n):
-            self._n = n
-
-        def __call__(self, img):
-            return self._n.transform(img)
-
-    return _StainWrapper(normalizer)
+from ssl_train import pretrain_ssl
+from transform import det_transform, rand_transform
 
 
 def train(
     batch_size=8,
     lr=1e-5,
     epochs=200,
-    random_state=42,
+    ssl_epochs=30,
     csv_file=LUNG_METADATA_FILE,
     root_dir=LUNG_IMAGES_DIR,
     load_file=LUNG_LOADED_FILE,
-    embedding_cache=EMBEDDING_CACHE,
+    embedding_cache_dir=LUNG_PREPROCESS_DIR,
     device=None,
     use_stain_norm=True,
+    use_ssl=False,
+    random_state=42,
 ):
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -71,30 +59,10 @@ def train(
 
     df = pd.read_csv(load_file, encoding="utf-8")
 
-    # Normalization parameters based on the ViT-B-16 model
-    normalize = transforms.Normalize(
-        mean=[0.485, 0.456, 0.406],
-        std=[0.229, 0.224, 0.225],
-    )
-
-    # Deterministic transforms for test set
-    det_transform = transforms.Compose(
-        [
-            transforms.Resize(size=(224, 224), antialias=True),
-            transforms.ToTensor(),
-            normalize,
-        ]
-    )
-
-    # Random transforms for train and validation set
-    rand_transform = transforms.Compose(
-        [
-            transforms.Resize(size=(224, 224), antialias=True),
-            transforms.RandomCrop(size=224, padding=16),
-            transforms.RandomHorizontalFlip(p=0.5),
-            transforms.ToTensor(),
-            normalize,
-        ]
+    stain_suffix = "stain" if use_stain_norm else "raw"
+    ssl_suffix = "ssl" if use_ssl else "labeled"
+    embedding_cache = Path(
+        *[embedding_cache_dir, f"lung_embedded_{stain_suffix}_{ssl_suffix}.pt"]
     )
 
     if os.path.exists(embedding_cache):
@@ -106,10 +74,17 @@ def train(
     else:
         stain_norm = build_macenko_normalizer(df) if use_stain_norm else None
 
+        if use_ssl:
+            pretrain_ssl(df, device, epochs=ssl_epochs, stain_normalizer=stain_norm)
+
         print("=> Building ViT backbone model for embedding extraction")
         backbone = torchvision.models.vit_b_16(
             weights=ViT_B_16_Weights.DEFAULT, image_size=224
         )
+
+        if use_ssl and os.path.exists(SSL_CHECKPOINT):
+            backbone.load_state_dict(torch.load(SSL_CHECKPOINT, map_location="cpu"))
+            print("Loaded SSL backbone weights.")
 
         # Removing classfication layer as we don't need the logits
         backbone.heads = nn.Identity()
@@ -153,6 +128,7 @@ def train(
     embed_dim = train_X.shape[1]  # 768 for ViT-B/16
     model = ClassifierHead(embed_dim, num_classes=len(label_map)).to(device)
     optimizer = Adam(model.parameters(), lr=lr)
+
     loss_fn = nn.CrossEntropyLoss()
 
     loss_epochs, acc_epochs = [], []
@@ -188,7 +164,7 @@ def train(
         val_acc /= len(valid_loader.dataset)
 
         print(
-            f"Epochs {e + 1:03d} | "
+            f" Epochs {e + 1:03d} | "
             f"Train loss : {loss_epochs[-1]:.2f} | Train acc {acc_epochs[-1] * 100:.2f} % | "
             f"Val loss {val_loss:.4f} | Val acc {val_acc * 100:.2f}%"
         )
@@ -212,7 +188,6 @@ def train(
                 ),
             )
 
-    """
     # Final model evaluation
     model.eval()
     test_acc = 0
@@ -221,8 +196,7 @@ def train(
             logits = model(feat_batch)
             test_acc += (logits.argmax(1) == label_batch).sum().item()
     test_acc /= len(test_loader.dataset)
-    print(f"\nTest accuracy: {test_acc * 100:.2f}%")
-    """
+    print(f"\n=> Final Test accuracy: {test_acc * 100:.2f}% \n")
 
 
 def main():

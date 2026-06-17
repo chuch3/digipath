@@ -135,7 +135,6 @@ class LungImageLoaderDataset(Dataset):
         row = self._df.iloc[idx]
         image = self._loader(row["path"])
 
-        # FIX: stain normalizer not transforming
         if self._stain_norm:
             image = self._stain_norm(image)
         if self._transform:
