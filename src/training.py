@@ -36,14 +36,14 @@ def train(
     batch_size=8,
     lr=1e-5,
     epochs=200,
-    ssl_epochs=30,
+    ssl_epochs=10,
     csv_file=LUNG_METADATA_FILE,
     root_dir=LUNG_IMAGES_DIR,
     load_file=LUNG_LOADED_FILE,
     embedding_cache_dir=LUNG_PREPROCESS_DIR,
     device=None,
     use_stain_norm=True,
-    use_ssl=False,
+    use_ssl=True,
     random_state=42,
 ):
     if device is None:
@@ -53,6 +53,8 @@ def train(
     torch.manual_seed(random_state)
 
     # This guarantees the loaded dataset is built before reading
+    import pickle
+
     train_idx, valid_idx, test_idx, label_map = load_dataset(
         csv_file, root_dir, load_file
     )
@@ -74,17 +76,19 @@ def train(
     else:
         stain_norm = build_macenko_normalizer(df) if use_stain_norm else None
 
-        if use_ssl:
-            pretrain_ssl(df, device, epochs=ssl_epochs, stain_normalizer=stain_norm)
-
         print("=> Building ViT backbone model for embedding extraction")
         backbone = torchvision.models.vit_b_16(
             weights=ViT_B_16_Weights.DEFAULT, image_size=224
         )
 
-        if use_ssl and os.path.exists(SSL_CHECKPOINT):
-            backbone.load_state_dict(torch.load(SSL_CHECKPOINT, map_location="cpu"))
-            print("Loaded SSL backbone weights.")
+        if use_ssl:
+            if not os.path.exists(SSL_CHECKPOINT):
+                print("=> SSL Checkpoint not found")
+                pretrain_ssl(df, device, epochs=ssl_epochs, stain_normalizer=stain_norm)
+            backbone.load_state_dict(
+                torch.load(SSL_CHECKPOINT, map_location="cpu"), strict=False
+            )
+            print("=> Loaded SSL backbone weights")
 
         # Removing classfication layer as we don't need the logits
         backbone.heads = nn.Identity()

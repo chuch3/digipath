@@ -29,5 +29,4 @@ LUNG_LOADED_FILE = Path(*[LUNG_PREPROCESS_DIR, "loaded.csv"])
 EMBEDDING_CACHE = Path(*[LUNG_PREPROCESS_DIR, "lung_embeddings.pt"])
 
 LUNG_MODEL_DIR = Path(*[PROJECT_DIR, "model"])
-
-SSL_CHECKPOINT = "lung_ssl_backbone.pth"
+SSL_CHECKPOINT = Path(*[LUNG_MODEL_DIR, "lung_ssl_backbone.pth"])

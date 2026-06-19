@@ -15,18 +15,30 @@ establishing cost advantage over traditional MRI consultations and providing lab
 
 Goal : Create a strong-level / patch-level WSI (Whole-Slide Image) lung tumor classification with good results
 
+> Train acc 92.49 % | Val loss 0.3660 | Val acc 86.75% | Test accuracy: 79.13%
+> - [ ] early stopping, regularization (dropout, L2 weight decay, augment)
+
 ## Todo
 
 > [!WARNING]
 > DOCUMENT EVERYTHING in google docs 
 
-- [ ] Visualize masks with gradient attention rollout over Grad-CAM
-- [ ] Attention MLP head over simple MLP
-- [ ] Visualize in jupyter notebook 
+By today:
+- [x] Visualize attention masks with Grad-CAM
+    - [ ] report and understand the algorithm
+- [ ] Improve ViT model (Attention MLP head over simple MLP???)
+
+- Note down color jitter for more color, CLAHE for contrast. note down failure and improvements
+
+- [ ] Visualize in jupyter notebook for report
+- [ ] Uncertainty metric
+- [ ] Out-of-distribution detection
+
 
 - [x] Macenko stain normalization (baseline normalization technique)
 - [x] Fix split_idx with extract_embeddings on here and on training.py
 - [x] Extract embedding and train on simpler classifiers
+- [x] FIX: Why does the embedded cache doesn't give the same performance when first time built
 
 #### Future ideas
 

@@ -48,7 +48,6 @@ ssl_transform = transforms.Compose(
         transforms.RandomVerticalFlip(p=0.5),
         transforms.RandomApply([transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8),
         transforms.RandomGrayscale(p=0.2),
-        transforms.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0)),
         transforms.ToTensor(),
         normalize,
     ]
