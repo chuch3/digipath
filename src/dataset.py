@@ -91,9 +91,7 @@ class LungHist700Dataset(Dataset):
                 (self._meta["superclass"] + "_" + self._meta["subclass"]).unique()
             )
         }
-        self.label_map["nor"] = self.label_map.pop(
-            "nor_"
-        )  # NOTE: this logic can be optimized further but whateves
+        self.label_map["nor"] = self.label_map.pop("nor_")
 
         assert len(self.label_map) == 7  # Checking for proper dataset
 
@@ -193,7 +191,7 @@ def load_dataset(
     X_train, y_train = X.iloc[train_idx ], y.iloc[train_idx ]
     """
 
-    # The splits arent' as accurate as (80/10/10) due to patient-level splits
+    # The splits arent' as accurate as (75/15/15) due to patient-level splits
     rich.print(
         Panel(
             "LungHist700 Dataset Split Statistics (Patient-Level)\n"

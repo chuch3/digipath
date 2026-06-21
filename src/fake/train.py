@@ -1,12 +1,18 @@
 import os
 from pathlib import Path
 
+import cv2
+import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
 import torchvision
+from matplotlib.pyplot import imshow
+from PIL import Image
 from torch.optim import Adam
-from torch.utils.data import DataLoader, TensorDataset
+from torch.optim.lr_scheduler import CosineAnnealingLR
+from torch.utils.data import DataLoader, Dataset, TensorDataset
+from torchvision import transforms
 from torchvision.models import ViT_B_16_Weights
 from tqdm import tqdm
 
@@ -19,6 +25,7 @@ from constant import (
     SSL_CHECKPOINT,
 )
 from dataset import load_dataset
+from evaluate import run_full_evaluation
 from extract import extract_embeddings
 from macenko import build_macenko_normalizer
 from model import ClassifierHead
@@ -30,7 +37,7 @@ def train(
     batch_size=8,
     lr=1e-5,
     epochs=200,
-    ssl_epochs=30,
+    ssl_epochs=10,
     csv_file=LUNG_METADATA_FILE,
     root_dir=LUNG_IMAGES_DIR,
     load_file=LUNG_LOADED_FILE,
@@ -47,6 +54,8 @@ def train(
     torch.manual_seed(random_state)
 
     # This guarantees the loaded dataset is built before reading
+    import pickle
+
     train_idx, valid_idx, test_idx, label_map = load_dataset(
         csv_file, root_dir, load_file
     )
@@ -128,6 +137,7 @@ def train(
     loss_fn = nn.CrossEntropyLoss()
 
     loss_epochs, acc_epochs = [], []
+    val_loss_epochs, val_acc_epochs = [], []
 
     for e in tqdm(range(epochs), desc="> Training~ "):
         model.train()
@@ -159,6 +169,10 @@ def train(
         val_loss /= len(valid_loader)
         val_acc /= len(valid_loader.dataset)
 
+        # Persist per-epoch validation metrics so they can be plotted later
+        val_loss_epochs.append(val_loss)
+        val_acc_epochs.append(val_acc)
+
         print(
             f" Epochs {e + 1:03d} | "
             f"Train loss : {loss_epochs[-1]:.2f} | Train acc {acc_epochs[-1] * 100:.2f} % | "
@@ -172,6 +186,8 @@ def train(
                 "optimizer": optimizer.state_dict(),
                 "loss_history": loss_epochs,
                 "acc_history": acc_epochs,
+                "val_loss_history": val_loss_epochs,
+                "val_acc_history": val_acc_epochs,
                 "label_map": label_map,
             }
             torch.save(
@@ -193,6 +209,20 @@ def train(
             test_acc += (logits.argmax(1) == label_batch).sum().item()
     test_acc /= len(test_loader.dataset)
     print(f"\n=> Final Test accuracy: {test_acc * 100:.2f}% \n")
+
+    # Generate ROC-AUC curve, confusion matrix, and loss/accuracy evolution plots
+    print("=> Generating evaluation plots (ROC-AUC, confusion matrix, training curves)")
+    run_full_evaluation(
+        model,
+        test_loader,
+        label_map,
+        device,
+        loss_epochs,
+        acc_epochs,
+        output_dir=LUNG_MODEL_DIR,
+        val_loss_epochs=val_loss_epochs,
+        val_acc_epochs=val_acc_epochs,
+    )
 
 
 def main():

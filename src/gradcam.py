@@ -14,6 +14,7 @@ from PIL import Image
 from torchvision.models import ViT_B_16_Weights
 
 from constant import (
+    GRADCAM_OUT_DIR,
     LUNG_IMAGES_DIR,
     LUNG_LOADED_FILE,
     LUNG_METADATA_FILE,
@@ -71,13 +72,25 @@ class GradCAM:
         cam.remove_hooks()
     """
 
-    def __init__(self, model: ViTWithHead):
+    def __init__(self, model: ViTWithHead, layer_idx: int = -4):
+        """
+        layer_idx: which encoder block to hook (default: -4, i.e. 4th-from-last
+        of 12 blocks for ViT-B/16 -> index 8).
+
+        Hooking the *final* block is a common mistake for ViT Grad-CAM: by
+        that depth, global self-attention has mixed information across nearly
+        all 196 patch tokens, so activations/gradients become close to
+        spatially uniform and the resulting CAM is flat/uninformative.
+        Mid-depth blocks (roughly the last third, but not the very last)
+        retain much more localized signal. -4 is a reasonable default for a
+        12-block ViT-B/16; tune per-dataset if needed.
+        """
         self.model = model
         self._acts: torch.Tensor | None = None
         self._grads: torch.Tensor | None = None
 
-        # Hook the last encoder block of the backbone inside ViTWithHead
-        target = model.backbone.encoder.layers[-1]
+        layers = model.backbone.encoder.layers
+        target = layers[layer_idx]
         self._fwd_hook = target.register_forward_hook(self._save_acts)
         self._bwd_hook = target.register_full_backward_hook(self._save_grads)
 
@@ -94,6 +107,7 @@ class GradCAM:
         self,
         img_tensor: torch.Tensor,  # (1, 3, 224, 224)
         class_idx: int,
+        debug: bool = False,
     ) -> np.ndarray:  # (224, 224) heatmap in [0, 1]
 
         self.model.eval()
@@ -104,14 +118,32 @@ class GradCAM:
         self.model.zero_grad()
         logits[0, class_idx].backward()
 
-        # acts / grads: (1, 197, 768)  → drop CLS token → (196, 768)
+        # acts / grads: (1, 197, 768)  -> drop CLS token -> (196, 768)
         acts = self._acts[0, 1:]  # patch tokens only
         grads = self._grads[0, 1:]
 
-        # Global-average-pool the gradients over the embedding dim → (196,)
-        weights = grads.mean(dim=-1)
-        cam = (weights[:, None] * acts).sum(dim=-1)  # (196,)
+        # Per-token relevance: dot the gradient and activation vectors
+        # directly (element-wise product summed over embedding dim) rather
+        # than first collapsing grads to a single scalar via mean(). Taking
+        # the channel-mean of a 768-d gradient first can cancel positive and
+        # negative components toward ~0 and erase the signal before ReLU
+        # ever runs. Summing the raw element-wise product preserves it.
+        cam = (grads * acts).sum(dim=-1)  # (196,)
+
+        if debug:
+            print(
+                f"[GradCAM] raw cam stats: min={cam.min().item():.4g} "
+                f"max={cam.max().item():.4g} mean={cam.mean().item():.4g} "
+                f"std={cam.std().item():.4g}"
+            )
+
         cam = F.relu(cam)
+
+        if cam.max().item() < 1e-6:
+            # Degenerate case: ReLU killed everything. Fall back to absolute
+            # value so you still get *some* spatial signal instead of a flat
+            # field silently stretched into noise by min-max normalization.
+            cam = (grads * acts).sum(dim=-1).abs()
 
         n_patches = int(cam.shape[0] ** 0.5)  # 14 for ViT-B/16
         cam = cam.reshape(n_patches, n_patches).cpu().numpy()
@@ -189,6 +221,8 @@ def guided_gradcam(
     combined_model: ViTWithHead,
     img_tensor: torch.Tensor,
     class_idx: int,
+    layer_idx: int = -4,
+    debug: bool = False,
 ) -> dict:
     """
     Compute Grad-CAM, input-gradient saliency, and their element-wise product
@@ -200,11 +234,18 @@ def guided_gradcam(
     A single combined model is used so that:
       - hooks are registered once (no interference),
       - gradients flow through the same forward path for both methods.
+
+    layer_idx: encoder block to hook for Grad-CAM (see GradCAM docstring --
+    default avoids the final block, where ViT attention has smoothed
+    activations to near-uniformity and the CAM goes flat).
+
+    debug: if True, prints raw cam tensor stats (min/max/mean/std) before
+    normalization, so you can confirm the signal isn't degenerate.
     """
-    cam_extractor = GradCAM(combined_model)
+    cam_extractor = GradCAM(combined_model, layer_idx=layer_idx)
     gbp_extractor = GuidedBackprop(combined_model, guided=False)
 
-    cam = cam_extractor(img_tensor, class_idx)
+    cam = cam_extractor(img_tensor, class_idx, debug=debug)
     # Remove Grad-CAM hooks before running GuidedBackprop to avoid
     # the activation/gradient buffers being overwritten mid-backward.
     cam_extractor.remove_hooks()
@@ -262,20 +303,24 @@ def explain_pipeline(
         img_t = det_transform(pil).unsqueeze(0).to(device)
         label_idx = int(row["label"])
 
-        maps = guided_gradcam(combined, img_t, label_idx)
+        maps = guided_gradcam(combined, img_t, label_idx, debug=(i == 0))
 
         save_path = GRADCAM_OUT_DIR / f"sample_{i:04d}_cls{label_idx}.png"
         save_explanation(pil, maps, idx2label.get(label_idx, str(label_idx)), save_path)
         print(f"=> Saved: {save_path}")
 
 
-def save_explanation(
-    original_img: Image.Image, maps: dict, label: str, save_path: Path
-):
+def save_explanation(original_img, maps: dict, label: str, save_path: Path):
     """Save a 4-panel PNG: original | Grad-CAM | Guided BP | Guided Grad-CAM."""
 
+    # Resize to 224×224 so it matches the heatmap spatial dimensions.
+    # The first panel still shows the image at display size; the overlay
+    # panels need pixel-aligned shapes for the arithmetic to work.
+    display_img = original_img.resize((224, 224), resample=Image.BILINEAR)
+    img_np = np.array(display_img) / 255.0  # (224, 224, 3) in [0, 1]
+
     fig, axes = plt.subplots(1, 4, figsize=(16, 4))
-    axes[0].imshow(original_img)
+    axes[0].imshow(display_img)
     axes[0].set_title("Original")
 
     for ax, (key, title) in zip(
@@ -287,8 +332,7 @@ def save_explanation(
         ],
     ):
         colored = cm.jet(maps[key])[:, :, :3]
-        img = original_img.resize((224, 224))
-        overlay = 0.5 * np.array(img) / 255.0 + 0.5 * colored
+        overlay = 0.5 * np.array(original_img) / 255.0 + 0.5 * colored
         ax.imshow(np.clip(overlay, 0, 1))
         ax.set_title(title)
 

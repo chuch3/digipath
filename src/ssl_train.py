@@ -70,7 +70,7 @@ class ProjectionHead(nn.Module):
 # change the positional embedding shape and break load_state_dict() into
 # a plain vit_b_16(image_size=224) downstream.
 # ---------------------------------------------------------------------------
-def build_encoder(freeze_until_block=10):
+def build_encoder(freeze_until_block=8):
     backbone = torchvision.models.vit_b_16(weights=ViT_B_16_Weights.DEFAULT)
     backbone.heads = nn.Identity()
 
@@ -99,7 +99,7 @@ def build_encoder(freeze_until_block=10):
 # ---------------------------------------------------------------------------
 class MoCo(nn.Module):
     def __init__(
-        self, encoder_fn, dim=128, queue_size=4096, momentum=0.999, temperature=0.07
+        self, encoder_fn, dim=128, queue_size=256, momentum=0.99, temperature=0.07
     ):
         super().__init__()
         self.K = queue_size
@@ -162,7 +162,7 @@ def pretrain_ssl(
     epochs=1000,
     batch_size=16,
     lr=3e-4,
-    freeze_until_block=10,
+    freeze_until_block=8,
     queue_size=4096,
     momentum=0.999,
     temperature=0.07,
@@ -202,7 +202,9 @@ def pretrain_ssl(
         prefetch_factor=4 if num_workers > 0 else None,
     )
 
-    encoder_fn = lambda: build_encoder(freeze_until_block=freeze_until_block)
+    def encoder_fn():
+        return build_encoder(freeze_until_block=freeze_until_block)
+
     model = MoCo(
         encoder_fn,
         dim=128,
