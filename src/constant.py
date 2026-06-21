@@ -30,3 +30,5 @@ EMBEDDING_CACHE = Path(*[LUNG_PREPROCESS_DIR, "lung_embeddings.pt"])
 
 LUNG_MODEL_DIR = Path(*[PROJECT_DIR, "model"])
 SSL_CHECKPOINT = Path(*[LUNG_MODEL_DIR, "lung_ssl_backbone.pth"])
+
+GRADCAM_OUT_DIR = Path("gradcam_output")

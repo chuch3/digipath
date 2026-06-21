@@ -23,8 +23,6 @@ from dataset import load_dataset
 from model import ClassifierHead
 from transform import det_transform
 
-GRADCAM_OUT_DIR = Path("gradcam_output")
-
 
 class ViTWithHead(nn.Module):
     """
