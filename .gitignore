@@ -10,3 +10,8 @@ wheels/
 
 # NOTE: Remember to the specified your dataset into this folder to train 
 data/
+model/
+mock/
+output/
+gradcam_output/
+stain_norm_output/

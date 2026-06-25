@@ -13,48 +13,53 @@ establishing cost advantage over traditional MRI consultations and providing lab
 
 [(Wilson et al., 2017)](https://clpmag.com/diagnostic-technologies/digital-pathology/digital-pathology-gives-rise-computational-pathology/)
 
+Goal : Create a strong-level / patch-level WSI (Whole-Slide Image) lung tumor classification with good results
+
+
 ## Todo
 
-Goal : Create a strong-level / patch-level WSI (Whole-Slide Image) lung tumor Classification with good results
+> [!WARNING]
+> DOCUMENT EVERYTHING in google docs 
 
-> i know this is keywordy but bare with me mister
+By today:
+- [x] Visualize attention masks with Grad-CAM
+- [x] Improve ViT model (Attention MLP head over simple MLP???)
 
-```mermaid
-graph TD
-    A["LungHist700 Dataset"] --> B["Dataset loading"]
-    B --> B1["Review again on online guides"]
-    B --> B2["Resizing / data augmentation for better performance"]
-    B --> B3["Dataset split 80% train, 10% test, 10% valid"]
-    B --> B4["Use metadata csv to map data"]
+- Note down color jitter for more color, CLAHE for contrast. note down failure and improvements
 
-    A --> D["Attention-based models like simple ViTs due to small dataset training"]
-```
+- [ ] Visualize in jupyter notebook for report
+- [ ] Uncertainty metric
+- [ ] Out-of-distribution detection
 
 
-- Model training
-    - [x] Setup model training, optimizers, loss function, etc
-    - [ ] Fix training issue on Google Colab 
+- [x] Macenko stain normalization (baseline normalization technique)
+- [x] Fix split_idx with extract_embeddings on here and on training.py
+- [x] Extract embedding and train on simpler classifiers
+- [x] FIX: Why does the embedded cache doesn't give the same performance when first time built
 
-    - [ ] Evaluate based on LungHist700 paper via CAM and k means-CV
+#### Future ideas
 
+- Out-of-distribution detection for security in avoiding fake tissue samples
+- Uncertainty estimation
+- Attention MIL pooling for interpretable attention confidence scores
+- Compare accuracy, AUC-ROC, hyperparameter tuning, CV, heatmaps
+- Self-supervised pretraining to improve embeddings
+- Pathology-aware encoder over ViT
+
+
+### Mini-notes 
+
+- Attention based training due to small datasets 
 - Simulate Weak-level classification due to storage constraints 
     - Slide-level predictions, attention heatmaps, MIL pooling
-
 - Self-supervised learning 
-- Stain normalization comparison
-- Out-of-distribution detection
-
 
 > "The DNN model used in both methods was a ResNet50 network pretrained on ImageNet. The Adam optimizer was employed with an initial learning rate of 1e-5, which was reduced by a factor of 0.1 if the model began to overfit. Categorical cross-entropy was used as the loss function in both experiments. The Albumentations library25 was utilized to generate augmentations on the fly during training." from LungHist700 whitepaper
 
-- resizing / data augmentation for better performance
-- dataset split 80% train, 10% test, 10% valid
+- Resizing / data augmentation for better performance
+- Dataset split 80% train, 10% test, 10% valid
+- Attention-based models like simple ViTs due to small dataset training
 
-- [ ] EDA analysis (?)
-
-- [ ] Attention-based models like simple ViTs due to small dataset training
-
-#### Future ideas
 
 > MIL can only be used on weak-level / slide-level / world-level supervised learning
 
@@ -63,8 +68,6 @@ graph TD
 - Tissue segmentation 
 
 ### Dataset Description
-
-- [TCIA Rectum Cancer / TCGA-READ](https://www.cancerimagingarchive.net/collection/tcga-read/)
 
 - LungHist700 [(Diosdado et al., 2024)](https://doi.org/10.1038/s41597-024-03944-3)
     - "Accurate detection and classification of lung malignancies are crucial for 
