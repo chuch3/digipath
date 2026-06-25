@@ -1,12 +1,13 @@
 import os
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import rich
 import torch
 from PIL import Image
 from rich.panel import Panel
-from sklearn.model_selection import GroupShuffleSplit
+from sklearn.model_selection import StratifiedGroupKFold
 from torch.utils.data import Dataset
 
 from constant import LUNG_IMAGES_DIR, LUNG_LOADED_FILE, LUNG_METADATA_FILE
@@ -30,6 +31,8 @@ class LungHist700Dataset(Dataset):
         - "pd" (poorly differentiated)
 
     > For more dataset info at [link](https://www.nature.com/articles/s41597-024-03944-3.pdf)
+
+    Each model will classify based on the supercalss due to the large number of classes needed to compute with each distinct superclass and subclass (7)
     """
 
     def __init__(
@@ -70,8 +73,9 @@ class LungHist700Dataset(Dataset):
         self._sample = [
             (
                 path,
-                str(path.parent.name),
+                self._meta.loc[path.stem]["superclass"],
                 self._meta.loc[path.stem]["patient_id"],
+                self._meta.loc[path.stem]["resolution"],
             )
             for path in self._paths
         ]
@@ -80,7 +84,77 @@ class LungHist700Dataset(Dataset):
 
         self._sample_df = pd.DataFrame(
             self._sample,
-            columns=["path", "label", "patient_id"],
+            columns=["path", "label", "patient_id", "resolution"],
+        )
+
+        # Label map doesn't have to be in getter method as it's rarely modified in datasets
+        # {'aca_bd': 0, 'aca_md': 1, 'aca_pd': 2, 'scc_bd': 3, 'scc_md': 4, 'scc_pd': 5, 'nor': 6}
+        self.label_map = {
+            label: i for (i, label) in enumerate((self._meta["superclass"]).unique())
+        }
+        print(f"=> Label map : {self.label_map}")
+
+    # Dataset must be copied before modifying, hence copy wrapper
+    @property
+    def df(self) -> pd.DataFrame:
+        return self._sample_df.copy()
+
+    def __len__(self):
+        return len(self._sample)
+
+
+# 7 Class version of the LungHist700 with grading differentiation
+class LungHist700DatasetGrading(Dataset):
+    def __init__(
+        self,
+        csv_file,
+        root_dir,
+    ) -> None:
+
+        print(f"=> Metadata file : `{csv_file}` ")
+        print(f"=> Root directory : `{root_dir}`")
+
+        self._meta: pd.DateFrame = pd.read_csv(csv_file)
+
+        self._meta = self._meta.fillna("")  # Filling NaN from subclasses of `nor`
+
+        cols = ["superclass", "subclass", "resolution", "image_id"]
+
+        """
+        As the provided dataset didn't include patient IDs within the filepaths, 
+        we have to map using the metadata provided for patient-level group sampling. 
+
+        Amazing...
+
+        Conveniently (not), the filename matches the string join of each of series excluding
+        patient ID. Hence, we create the composite keys as index to locate the patient's ID. 
+        """
+        self._meta.index = (
+            self._meta[cols]
+            .astype(str)
+            .apply(lambda row: "_".join(part for part in row if part.strip()), axis=1)
+        )  # Creates composite key index by joining each series as strings and stripping empty subclasses
+
+        self._paths = list(
+            path for path in Path(LUNG_IMAGES_DIR).rglob("*") if path.is_file()
+        )
+
+        # Each sample contains a `(path, label, patient_id)` format for training
+        self._sample = [
+            (
+                path,
+                str(path.parent.name),
+                self._meta.loc[path.stem]["patient_id"],
+                self._meta.loc[path.stem]["resolution"],
+            )
+            for path in self._paths
+        ]
+
+        assert len(self._sample) == 691  # Checking for proper dataset
+
+        self._sample_df = pd.DataFrame(
+            self._sample,
+            columns=["path", "label", "patient_id", "resolution"],
         )
 
         # Label map doesn't have to be in getter method as it's rarely modified in datasets
@@ -91,9 +165,7 @@ class LungHist700Dataset(Dataset):
                 (self._meta["superclass"] + "_" + self._meta["subclass"]).unique()
             )
         }
-        self.label_map["nor"] = self.label_map.pop("nor_")
-
-        assert len(self.label_map) == 7  # Checking for proper dataset
+        print(f"=> Label map : {self.label_map}")
 
     # Dataset must be copied before modifying, hence copy wrapper
     @property
@@ -135,10 +207,24 @@ class LungImageLoaderDataset(Dataset):
 
         if self._stain_norm:
             image = self._stain_norm(image)
+
         if self._transform:
             image = self._transform(image)
 
         return (image, row["label"])
+
+
+def stratify_group_split(df, label_col, group_col, train_size, random_state):
+    k = max(
+        2, round(1 / (1 - train_size))
+    )  # k is either the minimum of 2 or 1 - train_size
+    stratify = StratifiedGroupKFold(n_splits=k, shuffle=True, random_state=random_state)
+
+    groups = df[group_col].to_numpy()
+    labels = df[label_col].to_numpy()
+
+    kept_idx, held_out_idx = next(stratify.split(df, labels, groups))
+    return kept_idx, held_out_idx
 
 
 def load_dataset(
@@ -161,44 +247,40 @@ def load_dataset(
         )
     )
 
-    X, y = df[["path", "patient_id"]], df["label"]
-
-    # Keeps the groups together in patient-level with shuffling, not stratification
-    gss_1 = GroupShuffleSplit(
-        n_splits=1,
+    # Patient level stratification while maintaining target label balance
+    train_idx, temp_idx = stratify_group_split(
+        df,
+        label_col="label",
+        group_col="patient_id",
         train_size=0.7,
         random_state=random_state,
     )
 
-    gss_2 = GroupShuffleSplit(
-        n_splits=1,
+    df_temp = df.iloc[temp_idx].reset_index(drop=True)
+
+    valid_pos, test_pos = stratify_group_split(
+        df_temp,
+        label_col="label",
+        group_col="patient_id",
         train_size=0.5,
         random_state=random_state,
     )
 
-    train_idx, temp_idx = next(gss_1.split(X, y, X["patient_id"]))
+    temp_idx = np.asarray(temp_idx)
+    valid_idx = temp_idx[valid_pos]
+    test_idx = temp_idx[test_pos]
 
-    X_temp, y_temp = (
-        X.iloc[temp_idx].reset_index(drop=True),
-        y.iloc[temp_idx].reset_index(drop=True),
-    )
-
-    test_idx, valid_idx = next(gss_2.split(X_temp, y_temp, X_temp["patient_id"]))
-
-    """
-    X_test, y_test = X.iloc[test_idx ], y.iloc[test_idx ]
-    X_valid, y_valid = X.iloc[valid_idx ], y.iloc[valid_idx ]
-    X_train, y_train = X.iloc[train_idx ], y.iloc[train_idx ]
-    """
-
-    # The splits arent' as accurate as (75/15/15) due to patient-level splits
+    # The splits aren't exactly 70/15/15 due to patient-level and stratified grouping
     rich.print(
         Panel(
-            "LungHist700 Dataset Split Statistics (Patient-Level)\n"
-            "----------\n"
+            "LungHist700 Dataset Split Statistics (Patient-Level, Stratified)\n"
+            "--------------\n"
             f"Train split : {len(train_idx) / len(df) * 100:.4f}%\n"
-            f"Validation splt : {len(test_idx) / len(df) * 100:.4f}%\n"
-            f"Test splt : {len(valid_idx) / len(df) * 100:.4f}%"
+            f"Validation split : {len(valid_idx) / len(df) * 100:.4f}%\n"
+            f"Test split : {len(test_idx) / len(df) * 100:.4f}%\n\n"
+            f"Train label dist:\n{df.iloc[train_idx]['label'].value_counts(normalize=True).sort_index() * 100}\n\n"
+            f"Valid label dist:\n{df.iloc[valid_idx]['label'].value_counts(normalize=True).sort_index() * 100}\n\n"
+            f"Test label dist:\n{df.iloc[test_idx]['label'].value_counts(normalize=True).sort_index() * 100}"
         )
     )
 

@@ -15,8 +15,6 @@ establishing cost advantage over traditional MRI consultations and providing lab
 
 Goal : Create a strong-level / patch-level WSI (Whole-Slide Image) lung tumor classification with good results
 
-> Train acc 92.49 % | Val loss 0.3660 | Val acc 86.75% | Test accuracy: 79.13%
-> - [ ] early stopping, regularization (dropout, L2 weight decay, augment)
 
 ## Todo
 
@@ -25,8 +23,7 @@ Goal : Create a strong-level / patch-level WSI (Whole-Slide Image) lung tumor cl
 
 By today:
 - [x] Visualize attention masks with Grad-CAM
-    - [ ] report and understand the algorithm
-- [ ] Improve ViT model (Attention MLP head over simple MLP???)
+- [x] Improve ViT model (Attention MLP head over simple MLP???)
 
 - Note down color jitter for more color, CLAHE for contrast. note down failure and improvements
 

@@ -100,6 +100,7 @@ class MacenkoNormalizer:
 
         # Reconstruct in reference stain space
         od_norm = self._HE_ref @ C
+
         rgb = self._od_to_rgb(od_norm.T.reshape(h, w, 3))  # Back to RGB shape from H&E
         return Image.fromarray(rgb)
 
@@ -114,7 +115,7 @@ def build_macenko_normalizer(df, n_refs=10):
         if not os.path.exists(row["path"]):
             continue
         img = np.array(Image.open(row["path"]).convert("RGB"))
-        score = abs(img.mean() - target_mean)
+        score = abs(img.mean() - target_mean)  # Absolute error from the target mean
         if score < best_score:
             best_score = score
             best_ref = row["path"]

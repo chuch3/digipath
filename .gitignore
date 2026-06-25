@@ -12,5 +12,6 @@ wheels/
 data/
 model/
 mock/
+output/
 gradcam_output/
 stain_norm_output/

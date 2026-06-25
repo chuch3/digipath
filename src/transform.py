@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import torch
 from PIL import Image
 from torchvision import transforms
 
@@ -19,23 +20,27 @@ normalize = transforms.Normalize(
 )
 
 
-# Deterministic transforms for test set
+# Deterministic transforms for test and validation set
 det_transform = transforms.Compose(
     [
-        transforms.Resize(size=(224, 224), antialias=True),
-        transforms.Lambda(clahe_transform),  # Enhancing contrast of stains
+        transforms.Resize(size=(256, 256), antialias=True),
+        transforms.CenterCrop(224),
+        # transforms.Lambda(clahe_transform),
         transforms.ToTensor(),
         normalize,
     ]
 )
 
 
-# Random transforms for train and validation set
+# Random transforms for train
 rand_transform = transforms.Compose(
     [
-        transforms.Resize(size=(224, 224), antialias=True),
-        transforms.Lambda(clahe_transform),
-        transforms.RandomHorizontalFlip(p=0.3),
+        transforms.RandomResizedCrop(224, scale=(0.8, 1.0)),
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.RandomVerticalFlip(p=0.5),
+        transforms.RandomRotation(30),
+        transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.1),
+        # transforms.Lambda(clahe_transform),
         transforms.ToTensor(),
         normalize,
     ]
@@ -47,7 +52,6 @@ ssl_transform = transforms.Compose(
         transforms.RandomHorizontalFlip(p=0.5),
         transforms.RandomVerticalFlip(p=0.5),
         transforms.RandomApply([transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8),
-        transforms.RandomGrayscale(p=0.2),
         transforms.ToTensor(),
         normalize,
     ]
